@@ -75,6 +75,33 @@ class TestElastiCacheCluster(BaseTest):
         resources = p.run()
         self.assertEqual(len(resources), 1)
 
+    def test_elasticache_snapshot_copy_cluster_tags(self):
+        session_factory = self.replay_flight_data(
+            'test_elasticache_copy_cluster_tags')
+
+        snapshot_name = 'test-tags'
+
+        results = session_factory().client('elasticache').list_tags_for_resource(ResourceName='arn:aws:')['TagList']
+        tags = {t['Key']: t['Value'] for t in results}
+        self.assertEqual(tags, {})
+
+        policy = self.load_policy({
+            'name': 'test-copy-cluster-tags',
+            'resource': 'cache-snapshot',
+            'actions': [{
+                'type': 'copy-cluster-tags',
+                'tags': ['tag_new']}]},
+            config={'region': 'us-west-2'},
+            session_factory=session_factory)
+
+        resources = policy.run()
+        results = session_factory().client('elasticache').list_tags_for_resource(ResourceName='arn:aws:')['TagList']
+
+        tags = {t['Key']: t['Value'] for t in results}
+        self.assertEqual(tags['tag_new'], 'test_tag')
+
+
+
     def test_elasticache_cluster_available(self):
         session_factory = self.replay_flight_data(
             'test_elasticache_cluster_available')

@@ -483,6 +483,7 @@ class DeleteElastiCacheSnapshot(BaseAction):
             c.delete_snapshot(SnapshotName=s['SnapshotName'])
 
 
+
 # added mark-for-op
 @ElastiCacheSnapshot.action_registry.register('mark-for-op')
 class ElastiCacheSnapshotTagDelayedAction(tags.TagDelayedAction):
@@ -516,6 +517,61 @@ class ElastiCacheSnapshotTagDelayedAction(tags.TagDelayedAction):
         for snapshot in snapshots:
             arn = self.manager.generate_arn(snapshot['SnapshotName'])
             client.add_tags_to_resource(ResourceName=arn, Tags=tags)
+
+
+@ElastiCacheSnapshot.action_registry.register('copy-cluster-tags')
+class CopyClusterTags(BaseAction):
+    """
+    Copy specified tags from Elasticache cluster to Snapshot
+    :example:
+
+        .. code-block: yaml
+
+            - name: elasticache-test
+              resource: cache-snapshot
+              filters:
+                 - type: value
+                   key: SnapshotName
+                   op: in
+                   value:
+                    - test-tags-backup
+              actions:
+                - type: copy-cluster-tags
+                  tags:
+                    - tag1
+                    - tag2
+    """
+
+    schema = type_schema(
+        'copy-cluster-tags',
+        tags={'type': 'array', 'items': {'type': 'string'}})
+
+
+    def process(self, snapshots):
+        log.info("Modifying %d ElastiCache snapshots", len(snapshots))
+        cluster_ids = {s['CacheClusterId'] for s in snapshots}
+        clusters = [
+            cluster for cluster in
+            ElastiCacheCluster(self.manager.ctx, {}).resources()
+            if cluster['CacheClusterId'] in cluster_ids]        # get cluster tags
+
+        for s in snapshots:
+            arn = self.manager.generate_arn(s['SnapshotName'])
+            for c in clusters:
+                if s['CacheClusterId'] == c['CacheClusterId']:
+                    only_tags = self.data.get('tags', []) # specify tags to copy
+                    copy_tags = []
+                    extant_tags = dict([(t['Key'], t['Value']) for t in c.get('Tags', [])])
+
+                    for t in c.get('Tags', ()):
+                        if only_tags and not t['Key'] in only_tags:
+                            continue
+                        if t['Key'] in extant_tags and t['Value'] == extant_tags[t['Key']]:
+                            copy_tags.append(t)
+
+                    client = local_session(self.manager.session_factory).client('elasticache')
+                    client.add_tags_to_resource(ResourceName=arn, Tags=copy_tags)
+
 
 
 # added unmark
