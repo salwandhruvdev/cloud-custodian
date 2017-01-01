@@ -482,8 +482,6 @@ class DeleteElastiCacheSnapshot(BaseAction):
         for s in snapshots_set:
             c.delete_snapshot(SnapshotName=s['SnapshotName'])
 
-
-
 # added mark-for-op
 @ElastiCacheSnapshot.action_registry.register('mark-for-op')
 class ElastiCacheSnapshotTagDelayedAction(tags.TagDelayedAction):
@@ -571,7 +569,6 @@ class CopyClusterTags(BaseAction):
 
                     client = local_session(self.manager.session_factory).client('elasticache')
                     client.add_tags_to_resource(ResourceName=arn, Tags=copy_tags)
-
 
 
 # added unmark
