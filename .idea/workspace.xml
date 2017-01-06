@@ -2,132 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="abf30681-ef93-42ae-97e7-1ed4b775c536" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/batch.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/cloudtrail.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/code.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/cognito.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/directconnect.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/ml.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/opsworks.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/shield.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/snowball.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/c7n/resources/support.py" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_codebuild/codebuild.BatchGetProjects_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_codebuild/codebuild.ListProjects_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_codecommit/codecommit.BatchGetRepositories_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_codecommit/codecommit.ListRepositories_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_codepipeline/codepipeline.GetPipeline_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_codepipeline/codepipeline.ListPipelines_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_dynamodb_delete_table/dynamodb.DeleteTable_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_dynamodb_delete_table/dynamodb.DescribeTable_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_dynamodb_delete_table/dynamodb.DescribeTable_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_dynamodb_delete_table/dynamodb.ListTables_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_ebs_cross_account/ec2.DescribeSnapshotAttribute_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_ebs_cross_account/ec2.DescribeSnapshotAttribute_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_ebs_cross_account/ec2.DescribeSnapshotAttribute_3.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_ebs_cross_account/ec2.DescribeSnapshotAttribute_4.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_ebs_cross_account/ec2.DescribeSnapshots_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_ebs_cross_account/iam.ListRoles_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/iam.ListRoles_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/iam.ListRoles_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.DescribeDBSnapshotAttributes_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.DescribeDBSnapshotAttributes_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.DescribeDBSnapshotAttributes_3.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.DescribeDBSnapshotAttributes_4.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.DescribeDBSnapshots_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.ListTagsForResource_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.ListTagsForResource_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.ListTagsForResource_3.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_rds_snapshot_access/rds.ListTagsForResource_4.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.CreateBucket_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.DeleteBucket_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_10.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_11.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_12.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_13.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_14.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_3.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_4.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_5.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_6.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_7.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_8.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.GetBucketLogging_9.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.ListBuckets_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.ListBuckets_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.ListBuckets_3.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.ListObjects_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.PutBucketLogging_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_s3_enable_logging/s3.PutBucketLogging_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.AuthorizeSecurityGroupIngress_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.AuthorizeSecurityGroupIngress_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.AuthorizeSecurityGroupIngress_3.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.CreateSecurityGroup_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.CreateSecurityGroup_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.CreateVpc_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.DeleteSecurityGroup_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.DeleteSecurityGroup_2.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.DeleteVpc_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/data/placebo/test_security_group_perm_expand/ec2.DescribeSecurityGroups_1.json" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/tests/test_code.py" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/tests/data/placebo/test_ec2_invalid_modify_groups_schema/file" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/placebo_data.zip" afterPath="$PROJECT_DIR$/tests/placebo_data.zip" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.gitignore" afterPath="$PROJECT_DIR$/.gitignore" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Makefile" afterPath="$PROJECT_DIR$/Makefile" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/README.rst" afterPath="$PROJECT_DIR$/README.rst" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/actions.py" afterPath="$PROJECT_DIR$/c7n/actions.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/commands.py" afterPath="$PROJECT_DIR$/c7n/commands.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/filters/iamaccess.py" afterPath="$PROJECT_DIR$/c7n/filters/iamaccess.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/logs_support.py" afterPath="$PROJECT_DIR$/c7n/logs_support.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/query.py" afterPath="$PROJECT_DIR$/c7n/query.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/reports/csvout.py" afterPath="$PROJECT_DIR$/c7n/reports/csvout.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/__init__.py" afterPath="$PROJECT_DIR$/c7n/resources/__init__.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/acm.py" afterPath="$PROJECT_DIR$/c7n/resources/acm.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/appelb.py" afterPath="$PROJECT_DIR$/c7n/resources/appelb.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/asg.py" afterPath="$PROJECT_DIR$/c7n/resources/asg.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/awslambda.py" afterPath="$PROJECT_DIR$/c7n/resources/awslambda.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/cfn.py" afterPath="$PROJECT_DIR$/c7n/resources/cfn.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/cw.py" afterPath="$PROJECT_DIR$/c7n/resources/cw.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/dynamodb.py" afterPath="$PROJECT_DIR$/c7n/resources/dynamodb.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/ebs.py" afterPath="$PROJECT_DIR$/c7n/resources/ebs.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/ec2.py" afterPath="$PROJECT_DIR$/c7n/resources/ec2.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/elasticache.py" afterPath="$PROJECT_DIR$/c7n/resources/elasticache.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/elb.py" afterPath="$PROJECT_DIR$/c7n/resources/elb.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/kinesis.py" afterPath="$PROJECT_DIR$/c7n/resources/kinesis.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/kms.py" afterPath="$PROJECT_DIR$/c7n/resources/kms.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/rds.py" afterPath="$PROJECT_DIR$/c7n/resources/rds.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/redshift.py" afterPath="$PROJECT_DIR$/c7n/resources/redshift.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/route53.py" afterPath="$PROJECT_DIR$/c7n/resources/route53.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/s3.py" afterPath="$PROJECT_DIR$/c7n/resources/s3.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/sns.py" afterPath="$PROJECT_DIR$/c7n/resources/sns.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/sqs.py" afterPath="$PROJECT_DIR$/c7n/resources/sqs.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/vpc.py" afterPath="$PROJECT_DIR$/c7n/resources/vpc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/resources/waf.py" afterPath="$PROJECT_DIR$/c7n/resources/waf.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/c7n/tags.py" afterPath="$PROJECT_DIR$/c7n/tags.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/requirements-dev.txt" afterPath="$PROJECT_DIR$/requirements-dev.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/requirements.txt" afterPath="$PROJECT_DIR$/requirements.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/common.py" afterPath="$PROJECT_DIR$/tests/common.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_dynamodb.py" afterPath="$PROJECT_DIR$/tests/test_dynamodb.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_ebs.py" afterPath="$PROJECT_DIR$/tests/test_ebs.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_ec2.py" afterPath="$PROJECT_DIR$/tests/test_ec2.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_elasticache.py" afterPath="$PROJECT_DIR$/tests/test_elasticache.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_mu.py" afterPath="$PROJECT_DIR$/tests/test_mu.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_notify.py" afterPath="$PROJECT_DIR$/tests/test_notify.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_rds.py" afterPath="$PROJECT_DIR$/tests/test_rds.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_redshift.py" afterPath="$PROJECT_DIR$/tests/test_redshift.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_report.py" afterPath="$PROJECT_DIR$/tests/test_report.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_s3.py" afterPath="$PROJECT_DIR$/tests/test_s3.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_schema.py" afterPath="$PROJECT_DIR$/tests/test_schema.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_vpc.py" afterPath="$PROJECT_DIR$/tests/test_vpc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tests/test_waf.py" afterPath="$PROJECT_DIR$/tests/test_waf.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/c7n_mailer/README.md" afterPath="$PROJECT_DIR$/tools/c7n_mailer/README.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/c7n_mailer/c7n_mailer/cli.py" afterPath="$PROJECT_DIR$/tools/c7n_mailer/c7n_mailer/cli.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/c7n_mailer/requirements.txt" afterPath="$PROJECT_DIR$/tools/c7n_mailer/requirements.txt" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/c7n_salactus/c7n_salactus/cli.py" afterPath="$PROJECT_DIR$/tools/c7n_salactus/c7n_salactus/cli.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/c7n_salactus/c7n_salactus/worker.py" afterPath="$PROJECT_DIR$/tools/c7n_salactus/c7n_salactus/worker.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/tools/c7n_salactus/requirements.txt" afterPath="$PROJECT_DIR$/tools/c7n_salactus/requirements.txt" />
     </list>
     <ignored path="cloud-custodian.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -157,7 +33,7 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="elasticache.py" pinned="false" current-in-tab="true">
+      <file leaf-file-name="elasticache.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/c7n/resources/elasticache.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="311">
@@ -167,11 +43,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="test_elasticache.py" pinned="false" current-in-tab="false">
+      <file leaf-file-name="test_elasticache.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/tests/test_elasticache.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="499">
-              <caret line="96" column="32" selection-start-line="96" selection-start-column="32" selection-end-line="96" selection-end-column="32" />
+            <state relative-caret-position="277">
+              <caret line="88" column="30" selection-start-line="88" selection-start-column="30" selection-end-line="88" selection-end-column="30" />
               <folding />
             </state>
           </provider>
@@ -229,8 +105,8 @@
       <list>
         <option value="$PROJECT_DIR$/c7n/filters/metrics.py" />
         <option value="$PROJECT_DIR$/c7n/registry.py" />
-        <option value="$PROJECT_DIR$/tests/test_elasticache.py" />
         <option value="$PROJECT_DIR$/c7n/resources/elasticache.py" />
+        <option value="$PROJECT_DIR$/tests/test_elasticache.py" />
       </list>
     </option>
   </component>
@@ -477,6 +353,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="-3065">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -529,18 +406,18 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tests/test_elasticache.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="499">
-          <caret line="96" column="32" selection-start-line="96" selection-start-column="32" selection-end-line="96" selection-end-column="32" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/c7n/resources/elasticache.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="311">
           <caret line="548" column="35" selection-start-line="548" selection-start-column="35" selection-end-line="548" selection-end-column="35" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tests/test_elasticache.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="277">
+          <caret line="88" column="30" selection-start-line="88" selection-start-column="30" selection-end-line="88" selection-end-column="30" />
           <folding />
         </state>
       </provider>

@@ -81,7 +81,8 @@ class TestElastiCacheCluster(BaseTest):
 
         snapshot_name = 'test-tags'
 
-        results = session_factory().client('elasticache').list_tags_for_resource(ResourceName='arn:aws:')['TagList']
+        results = session_factory().client('elasticache').list_tags_for_resource(
+            ResourceName='arn:aws:elasticache:us-west-2:726518276281:snapshot:mySnapshot')['TagList']
         tags = {t['Key']: t['Value'] for t in results}
         self.assertEqual(tags, {})
 
@@ -95,7 +96,9 @@ class TestElastiCacheCluster(BaseTest):
             session_factory=session_factory)
 
         resources = policy.run()
-        results = session_factory().client('elasticache').list_tags_for_resource(ResourceName=policy.manager.generate_arn)['TagList']
+        arn = policy.resource_manager.generate_arn(
+            resources[0]['SnapshotName'])
+        results = session_factory().client('elasticache').list_tags_for_resource(ResourceName=arn)['TagList']
 
         tags = {t['Key']: t['Value'] for t in results}
         self.assertEqual(tags['tag_new'], 'test_tag')
