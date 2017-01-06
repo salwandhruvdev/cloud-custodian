@@ -95,7 +95,7 @@ class TestElastiCacheCluster(BaseTest):
             session_factory=session_factory)
 
         resources = policy.run()
-        results = session_factory().client('elasticache').list_tags_for_resource(ResourceName='arn:aws:')['TagList']
+        results = session_factory().client('elasticache').list_tags_for_resource(ResourceName=policy.manager.generate_arn)['TagList']
 
         tags = {t['Key']: t['Value'] for t in results}
         self.assertEqual(tags['tag_new'], 'test_tag')

@@ -547,29 +547,27 @@ class CopyClusterTags(BaseAction):
 
     def process(self, snapshots):
         log.info("Modifying %d ElastiCache snapshots", len(snapshots))
-        cluster_ids = {s['CacheClusterId'] for s in snapshots}
-        clusters = [
-            cluster for cluster in
+        client = local_session(self.manager.session_factory).client('elasticache')
+        clusters = {
+            cluster['CacheClusterId']: cluster for cluster in
             ElastiCacheCluster(self.manager.ctx, {}).resources()
-            if cluster['CacheClusterId'] in cluster_ids]        # get cluster tags
-
+        }
         for s in snapshots:
-            arn = self.manager.generate_arn(s['SnapshotName'])
-            for c in clusters:
-                if s['CacheClusterId'] == c['CacheClusterId']:
-                    only_tags = self.data.get('tags', []) # specify tags to copy
-                    copy_tags = []
-                    extant_tags = dict([(t['Key'], t['Value']) for t in c.get('Tags', [])])
+            if s['CacheClusterId'] in clusters:
+                arn = self.manager.generate_arn(s['SnapshotName'])
+                tags_cluster = clusters[s['CacheClusterId']]['Tags']
+                only_tags = self.data.get('tags', [])  # specify tags to copy
+                extant_tags = dict([(t['Key'], t['Value']) for t in s.get('Tags', [])])  # Already existing tags on Snapshot
+                copy_tags = []
+                for t in tags_cluster:
+                    if only_tags == []:
+                        continue
+                    if t['Key'] in only_tags:
+                        copy_tags.append(t)
+                    if t['Key'] in extant_tags and t['Value'] == extant_tags[t['Key']] and t['Key'] in copy_tags:
+                        copy_tags.remove(t['Key'])
 
-                    for t in c.get('Tags', ()):
-                        if only_tags and not t['Key'] in only_tags:
-                            continue
-                        if t['Key'] in extant_tags and t['Value'] == extant_tags[t['Key']]:
-                            copy_tags.append(t)
-
-                    client = local_session(self.manager.session_factory).client('elasticache')
-                    client.add_tags_to_resource(ResourceName=arn, Tags=copy_tags)
-
+                client.add_tags_to_resource(ResourceName=arn, Tags=copy_tags)
 
 # added unmark
 @ElastiCacheSnapshot.action_registry.register('remove-tag')
