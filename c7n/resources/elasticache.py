@@ -553,7 +553,6 @@ class CopyClusterTags(BaseAction):
         tags={'type': 'array', 'items': {'type': 'string'}},
         required = ('tags',))
 
-
     def process(self, snapshots):
         log.info("Modifying %d ElastiCache snapshots", len(snapshots))
         client = local_session(self.manager.session_factory).client('elasticache')
