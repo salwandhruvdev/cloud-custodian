@@ -554,8 +554,8 @@ class CopyClusterTags(BaseAction):
         required = ('tags',))
 
     def get_permissions(self):
-        perms = self.manager.get_resource_manager('cache-snapshot').get_permissions()
-        perms.extend(['elasticache:AddTagsToResource', 'elasticache:DescribeCacheClusters'])
+        perms = self.manager.get_resource_manager('cache-cluster').get_permissions()
+        perms.append('elasticache:AddTagsToResource')
         return perms
 
     def process(self, snapshots):
