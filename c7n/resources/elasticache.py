@@ -542,7 +542,8 @@ class CopyClusterTags(BaseAction):
 
     schema = type_schema(
         'copy-cluster-tags',
-        tags={'type': 'array', 'items': {'type': 'string'}})
+        tags={'type': 'array', 'items': {'type': 'string'}},
+        required = ('tags',))
 
 
     def process(self, snapshots):

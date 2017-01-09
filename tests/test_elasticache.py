@@ -82,7 +82,7 @@ class TestElastiCacheCluster(BaseTest):
         snapshot_name = 'test-tags'
 
         results = session_factory().client('elasticache').list_tags_for_resource(
-            ResourceName='arn:aws:elasticache:us-west-2:726518276281:snapshot:mySnapshot')['TagList']
+            ResourceName='arn:aws:elasticache:us-west-2:644160558196:snapshot:test-tags-backup')['TagList']
         tags = {t['Key']: t['Value'] for t in results}
         self.assertEqual(tags, {})
 
