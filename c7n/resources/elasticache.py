@@ -553,6 +553,11 @@ class CopyClusterTags(BaseAction):
         tags={'type': 'array', 'items': {'type': 'string'}},
         required = ('tags',))
 
+    def get_permissions(self):
+        perms = self.manager.get_resource_manager('cache-snapshot').get_permissions()
+        perms.extend(['elasticache:AddTagsToResource', 'elasticache:DescribeCacheClusters'])
+        return perms
+
     def process(self, snapshots):
         log.info("Modifying %d ElastiCache snapshots", len(snapshots))
         client = local_session(self.manager.session_factory).client('elasticache')
