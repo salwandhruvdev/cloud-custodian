@@ -550,7 +550,7 @@ class CopyClusterTags(BaseAction):
 
     schema = type_schema(
         'copy-cluster-tags',
-        tags={'type': 'array', 'items': {'type': 'string'}},
+        tags={'type': 'array', 'items': {'type': 'string'}, 'minItems': 1},
         required = ('tags',))
 
     def get_permissions(self):
@@ -567,20 +567,19 @@ class CopyClusterTags(BaseAction):
         }
         for s in snapshots:
             if s['CacheClusterId'] in clusters:
-                arn = self.manager.generate_arn(s['SnapshotName'])
-                tags_cluster = clusters[s['CacheClusterId']]['Tags']
-                only_tags = self.data.get('tags', [])  # specify tags to copy
-                extant_tags = dict([(t['Key'], t['Value']) for t in s.get('Tags', [])])  # Already existing tags on Snapshot
-                copy_tags = []
-                for t in tags_cluster:
-                    if only_tags == []:
-                        continue
-                    if t['Key'] in only_tags:
-                        copy_tags.append(t)
-                    if t['Key'] in extant_tags and t['Value'] == extant_tags[t['Key']] and t['Key'] in copy_tags:
-                        copy_tags.remove(t['Key'])
+                continue
 
-                client.add_tags_to_resource(ResourceName=arn, Tags=copy_tags)
+            arn = self.manager.generate_arn(s['SnapshotName'])
+            tags_cluster = clusters[s['CacheClusterId']]['Tags']
+            only_tags = self.data.get('tags', [])  # Specify tags to copy
+            extant_tags = {t['Key']: t['Value'] for t in s.get('Tags', ())}
+            copy_tags = []
+
+            for t in tags_cluster:
+                if t['Key'] in only_tags and t['Value'] != extant_tags.get(t['Key'], ""):
+                    copy_tags.append(t)
+            self.retry(
+                client.add_tags_to_resource, ResourceName=arn, Tags=copy_tags)
 
 # added unmark
 @ElastiCacheSnapshot.action_registry.register('remove-tag')
