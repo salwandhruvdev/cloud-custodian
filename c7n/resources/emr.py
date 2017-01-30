@@ -84,9 +84,13 @@ class EMRCluster(QueryResourceManager):
         return result
 
     def augment(self, resources):
+        client = local_session(self.get_resource_manager('emr').session_factory).client('emr')
         # remap for cwmetrics
         for r in resources:
             r['ClusterId'] = r['Id']
+            cluster = client.describe_cluster(ClusterId=r['ClusterId'])
+            resource_tags = cluster['Cluster']['Tags']
+            r['Tags'] = resource_tags
         return resources
 
 
