@@ -13,15 +13,23 @@
 # limitations under the License.
 from datetime import datetime
 import time
+import logging
+import functools
 
 from botocore.exceptions import ClientError
 
 from c7n.manager import resources
 from c7n.actions import ActionRegistry, BaseAction
+from c7n.filters import FilterRegistry
 from c7n.query import QueryResourceManager
-from c7n.utils import local_session, type_schema
+from c7n.utils import (
+    local_session, type_schema, get_retry)
+from c7n.tags import TagDelayedAction, RemoveTag, TagActionFilter
 
+filters = FilterRegistry('emr.filters')
 actions = ActionRegistry('emr.actions')
+log = logging.getLogger('custodian.emr')
+filters.register('marked-for-op', TagActionFilter)
 
 
 @resources.register('emr')
@@ -40,6 +48,8 @@ class EMRCluster(QueryResourceManager):
         filter_name = None
 
     action_registry = actions
+    filter_registry = filters
+    retry = staticmethod(get_retry(('Throttled',)))
 
     def __init__(self, ctx, data):
         super(EMRCluster, self).__init__(ctx, data)
@@ -85,14 +95,74 @@ class EMRCluster(QueryResourceManager):
 
     def augment(self, resources):
         client = local_session(self.get_resource_manager('emr').session_factory).client('emr')
+        result = []
         # remap for cwmetrics
         for r in resources:
-            r['ClusterId'] = r['Id']
-            cluster = client.describe_cluster(ClusterId=r['ClusterId'])
-            resource_tags = cluster['Cluster']['Tags']
-            r['Tags'] = resource_tags
-        return resources
+            cluster = client.describe_cluster(ClusterId=r['Id'])['Cluster']
+            result.append(cluster)
+        print result
+        return result
 
+        # try:
+        #     cluster = self.retry(
+        #         client.describe_cluster(ClusterId=r['Id']))['Cluster']
+        # except ClientError as e:
+        #     log.warning("Exception fetching cluster  \n %s", e)
+        #     return None
+        # result.append(cluster)
+
+@actions.register('mark-for-op')
+class TagDelayedAction(TagDelayedAction):
+    """Action to specify an action to occur at a later date
+    :example:
+        .. code-block: yaml
+            policies:
+              - name: emr-mark-for-op
+                resource: emr
+                filters:
+                  - "tag:Name": absent
+                  - "tag:Work": absent
+                actions:
+                  - type: mark-for-op
+                    tag: custodian_cleanup
+                    msg: "Cluster does not have required tags tag: {op}@{action_date}"
+                    op: delete
+                    days: 4
+    """
+    permission = ('elasticmapreduce:AddTags',)
+    batch_size = 1
+
+    def process_resource_set(self, resources, tags):
+        client = local_session(self.manager.session_factory).client(
+            'emr')
+        for r in resources:
+            client.add_tags(ResourceId=r['Id'], Tags=tags)
+
+@actions.register('remove-tag')
+class UntagTable(RemoveTag):
+    """Action to remove tag(s) on a resource
+    :example:
+        .. code-block: yaml
+            policies:
+              - name: emr-remove-tag
+                resource: emr
+                filters:
+                  - "tag:target-tag": present
+                actions:
+                  - type: remove-tag
+                    tags: ["target-tag"]
+    """
+
+    concurrency = 2
+    batch_size = 5
+    permissions = ('elasticmapreduce:RemoveTags',)
+
+    def process_resource_set(self, resources, tag_keys):
+        client = local_session(
+            self.manager.session_factory).client('emr')
+        for r in resources:
+            client.remove_tags(
+                ResourceId=r['Id'], TagKeys=tag_keys)
 
 @actions.register('terminate')
 class Terminate(BaseAction):
