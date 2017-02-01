@@ -14,9 +14,6 @@
 from datetime import datetime
 import time
 import logging
-import functools
-
-from botocore.exceptions import ClientError
 
 from c7n.manager import resources
 from c7n.actions import ActionRegistry, BaseAction
@@ -31,7 +28,6 @@ actions = ActionRegistry('emr.actions')
 log = logging.getLogger('custodian.emr')
 
 filters.register('marked-for-op', TagActionFilter)
-
 
 @resources.register('emr')
 class EMRCluster(QueryResourceManager):
@@ -99,8 +95,8 @@ class EMRCluster(QueryResourceManager):
         result = []
         # remap for cwmetrics
         for r in resources:
-            cluster = EMRCluster.retry(
-                client.describe_cluster(ClusterId=r['Id']))['Cluster']
+            cluster = self.retry(
+                client.describe_cluster,ClusterId=r['Id'])['Cluster']
             result.append(cluster)
         return result
 
