@@ -21,7 +21,8 @@ from c7n.filters import FilterRegistry
 from c7n.query import QueryResourceManager
 from c7n.utils import (
     local_session, type_schema, get_retry)
-from c7n.tags import TagDelayedAction, RemoveTag, TagActionFilter
+from c7n.tags import (
+    TagDelayedAction, RemoveTag, TagActionFilter)
 
 filters = FilterRegistry('emr.filters')
 actions = ActionRegistry('emr.actions')
@@ -103,35 +104,41 @@ class EMRCluster(QueryResourceManager):
 @actions.register('mark-for-op')
 class TagDelayedAction(TagDelayedAction):
     """Action to specify an action to occur at a later date
+
     :example:
+
         .. code-block: yaml
+
             policies:
               - name: emr-mark-for-op
                 resource: emr
                 filters:
                   - "tag:Name": absent
-                  - "tag:Work": absent
                 actions:
                   - type: mark-for-op
                     tag: custodian_cleanup
-                    msg: "Cluster does not have required tags tag: {op}@{action_date}"
-                    op: delete
+                    op: terminate
                     days: 4
+                    msg: "Cluster does not have required tags tag: {op}@{action_date}"
     """
+
     permission = ('elasticmapreduce:AddTags',)
     batch_size = 1
 
     def process_resource_set(self, resources, tags):
-        client = local_session(self.manager.session_factory).client(
-            'emr')
+        client = local_session(
+            self.manager.session_factory).client('emr')
         for r in resources:
             client.add_tags(ResourceId=r['Id'], Tags=tags)
 
 @actions.register('remove-tag')
 class UntagTable(RemoveTag):
     """Action to remove tag(s) on a resource
+
     :example:
+
         .. code-block: yaml
+
             policies:
               - name: emr-remove-tag
                 resource: emr
