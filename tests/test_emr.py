@@ -83,6 +83,42 @@ class TestEMR(BaseTest):
         tags = {t['Key']: t['Value'] for t in cluster_tags}
         self.assertEqual(tags['first_tag'], 'first')
 
+    def test_emr_mark(self):
+        session_factory = self.replay_flight_data(
+            'test_emr_mark')
+        client = session_factory().client('emr')
+        p = self.load_policy({
+            'name': 'emr-mark',
+            'resource': 'emr',
+            'filters': [
+                {"tag:first_tag": 'first'}],
+            'actions': [
+                {'type': 'mark-for-op', 'days': 4,
+                'op': 'terminate', 'tag': 'test_tag'}]},
+            session_factory=session_factory)
+        resources = p.run()
+        new_tags = resources[0]['Tags']
+        self.assertEqual(len(resources), 1)
+        tag_map = {t['Key']: t['Value'] for t in new_tags}
+        self.assertTrue('test_tag' in tag_map)
+
+    def test_emr_unmark(self):
+        session_factory = self.replay_flight_data(
+            'test_emr_unmark')
+        client = session_factory().client('dynamodb')
+        p = self.load_policy({
+            'name': 'emr-unmark',
+            'resource': 'emr',
+            'filters': [
+                {"tag:first_tag": 'first'}],
+            'actions': [
+                {'type': 'remove-tag',
+                 'tags': ['test_tag']}]},
+            session_factory=session_factory)
+        resources = p.run()
+        old_tags = resources[0]['Tags']
+        self.assertEqual(len(resources), 1)
+        self.assertFalse('test_tag' in old_tags)
 
 class TestEMRQueryFilter(unittest.TestCase):
 

@@ -29,6 +29,7 @@ from c7n.tags import TagDelayedAction, RemoveTag, TagActionFilter
 filters = FilterRegistry('emr.filters')
 actions = ActionRegistry('emr.actions')
 log = logging.getLogger('custodian.emr')
+
 filters.register('marked-for-op', TagActionFilter)
 
 
@@ -98,18 +99,10 @@ class EMRCluster(QueryResourceManager):
         result = []
         # remap for cwmetrics
         for r in resources:
-            cluster = client.describe_cluster(ClusterId=r['Id'])['Cluster']
+            cluster = EMRCluster.retry(
+                client.describe_cluster(ClusterId=r['Id']))['Cluster']
             result.append(cluster)
-        print result
         return result
-
-        # try:
-        #     cluster = self.retry(
-        #         client.describe_cluster(ClusterId=r['Id']))['Cluster']
-        # except ClientError as e:
-        #     log.warning("Exception fetching cluster  \n %s", e)
-        #     return None
-        # result.append(cluster)
 
 @actions.register('mark-for-op')
 class TagDelayedAction(TagDelayedAction):
