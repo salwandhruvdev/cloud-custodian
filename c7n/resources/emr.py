@@ -30,6 +30,7 @@ log = logging.getLogger('custodian.emr')
 
 filters.register('marked-for-op', TagActionFilter)
 
+
 @resources.register('emr')
 class EMRCluster(QueryResourceManager):
     """Resource manager for Elastic MapReduce clusters
@@ -92,14 +93,16 @@ class EMRCluster(QueryResourceManager):
         return result
 
     def augment(self, resources):
-        client = local_session(self.get_resource_manager('emr').session_factory).client('emr')
+        client = local_session(
+            self.get_resource_manager('emr').session_factory).client('emr')
         result = []
         # remap for cwmetrics
         for r in resources:
             cluster = self.retry(
-                client.describe_cluster,ClusterId=r['Id'])['Cluster']
+                client.describe_cluster, ClusterId=r['Id'])['Cluster']
             result.append(cluster)
         return result
+
 
 @actions.register('mark-for-op')
 class TagDelayedAction(TagDelayedAction):
@@ -119,7 +122,7 @@ class TagDelayedAction(TagDelayedAction):
                     tag: custodian_cleanup
                     op: terminate
                     days: 4
-                    msg: "Cluster does not have required tags tag: {op}@{action_date}"
+                    msg: "Cluster does not have required tags"
     """
 
     permission = ('elasticmapreduce:AddTags',)
@@ -130,6 +133,7 @@ class TagDelayedAction(TagDelayedAction):
             self.manager.session_factory).client('emr')
         for r in resources:
             client.add_tags(ResourceId=r['Id'], Tags=tags)
+
 
 @actions.register('remove-tag')
 class UntagTable(RemoveTag):
@@ -159,6 +163,7 @@ class UntagTable(RemoveTag):
         for r in resources:
             client.remove_tags(
                 ResourceId=r['Id'], TagKeys=tag_keys)
+
 
 @actions.register('terminate')
 class Terminate(BaseAction):
@@ -252,4 +257,3 @@ class QueryFilter(object):
             value = [self.value]
 
         return {'Name': self.key, 'Values': value}
-

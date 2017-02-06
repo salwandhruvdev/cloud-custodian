@@ -59,7 +59,6 @@ class TestEMR(BaseTest):
             ]
         )
 
-
     def test_get_emr_tags(self):
         session_factory = self.replay_flight_data(
             'test_get_emr_tags')
@@ -73,8 +72,6 @@ class TestEMR(BaseTest):
             session_factory=session_factory)
 
         resources = policy.run()
-        cluster_response = session_factory().client(
-            'emr').list_clusters()
         self.assertEqual(len(resources), 1)
 
         cluster = session_factory().client(
@@ -86,7 +83,6 @@ class TestEMR(BaseTest):
     def test_emr_mark(self):
         session_factory = self.replay_flight_data(
             'test_emr_mark')
-        client = session_factory().client('emr')
         p = self.load_policy({
             'name': 'emr-mark',
             'resource': 'emr',
@@ -105,7 +101,6 @@ class TestEMR(BaseTest):
     def test_emr_unmark(self):
         session_factory = self.replay_flight_data(
             'test_emr_unmark')
-        client = session_factory().client('dynamodb')
         p = self.load_policy({
             'name': 'emr-unmark',
             'resource': 'emr',
@@ -119,6 +114,7 @@ class TestEMR(BaseTest):
         old_tags = resources[0]['Tags']
         self.assertEqual(len(resources), 1)
         self.assertFalse('test_tag' in old_tags)
+
 
 class TestEMRQueryFilter(unittest.TestCase):
 
