@@ -434,6 +434,10 @@ class EncryptionEnabledFilter(Filter):
     schema = type_schema(
         'no-encryption-statement')
 
+    def get_permissions(self):
+        perms = self.manager.get_resource_manager('s3').get_permissions()
+        return perms
+
     def process(self, buckets, event=None):
         return filter(None, map(self.process_bucket, buckets))
 
