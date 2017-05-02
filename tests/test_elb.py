@@ -185,7 +185,7 @@ class SSLPolicyTest(BaseTest):
         resources = policy.run()
         response_pol = client.describe_load_balancers(
             LoadBalancerNames=[
-                'test-elb'clear
+                'test-elb'
             ]
         )
         response_ciphers = client.describe_load_balancer_policies(
