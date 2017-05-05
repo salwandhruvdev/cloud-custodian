@@ -24,6 +24,7 @@ import os
 import pdb
 import sys
 import traceback
+import utils
 from datetime import datetime
 from dateutil.parser import parse as date_parse
 
@@ -51,8 +52,9 @@ def _default_options(p, blacklist=""):
 
     if 'region' not in blacklist:
         provider.add_argument(
-            "-r", "--region", default=None,
-            help="AWS Region to target (Default: %(default)s)")
+            "-r", "--region", action='append', default=[],
+            dest='regions', metavar='REGION',
+            help="AWS Region to target.  Can be used multiple times")
     provider.add_argument(
         "--profile",
         help="AWS Account Config File Profile to utilize")
@@ -99,27 +101,31 @@ def _default_options(p, blacklist=""):
 
 def _default_region(options):
     marker = object()
-    value = getattr(options, 'region', marker)
+    value = getattr(options, 'regions', marker)
     if value is marker:
         return
 
-    if value is not None:
+    if len(value) > 0:
         return
 
-    profile = getattr(options, 'profile', None)
     try:
-        import boto3
-        options.region = boto3.Session(profile_name=profile).region_name
-        log.debug("using default region:%s from boto" % options.region)
+        options.regions = [utils.get_profile_session(options).region_name]
+        log.debug("using default region:%s from boto" % options.regions[0])
     except:
         return
 
 
 def _default_account_id(options):
+    if options.assume_role:
+        try:
+            options.account_id = options.assume_role.split(':')[4]
+            return
+        except IndexError:
+            pass
+
     profile = getattr(options, 'profile', None)
     try:
-        import boto3
-        session = boto3.Session(profile_name=profile)
+        session = utils.get_profile_session(options)
         options.account_id = get_account_id_from_sts(session)
     except:
         options.account_id = None
@@ -148,7 +154,8 @@ def _report_options(p):
             "Options include simple, grid, rst")
 
     # We don't include `region` because the report command ignores it
-    p.add_argument("--region", default=DEFAULT_REGION, help=argparse.SUPPRESS)
+    p.add_argument("--region", dest='regions', default=[DEFAULT_REGION],
+                   help=argparse.SUPPRESS)
 
 
 def _metrics_options(p):
@@ -227,8 +234,7 @@ def setup_parser():
     c7n_desc = "Cloud fleet management"
     parser = argparse.ArgumentParser(description=c7n_desc)
 
-    # Setting `dest` means we capture which subparser was used.  We'll use it
-    # later on when doing post-parsing validation.
+    # Setting `dest` means we capture which subparser was used.
     subs = parser.add_subparsers(dest='subparser')
 
     report_desc = ("Report of resources that a policy matched/ran on. "
@@ -321,8 +327,9 @@ def main():
     if getattr(options, 'config', None) is not None:
         options.configs.append(options.config)
 
-    _default_region(options)
-    _default_account_id(options)
+    if options.subparser in ('report', 'logs', 'metrics', 'run'):
+        _default_region(options)
+        _default_account_id(options)
 
     try:
         command = options.command
@@ -335,11 +342,9 @@ def main():
         process_name = [os.path.basename(sys.argv[0])]
         process_name.extend(sys.argv[1:])
         setproctitle(' '.join(process_name))
-
         command(options)
     except Exception:
         if not options.debug:
             raise
         traceback.print_exc()
         pdb.post_mortem(sys.exc_info()[-1])
-

@@ -207,6 +207,23 @@ class SSLPolicyTest(BaseTest):
             active_ciphers,
             ['Protocol-TLSv1', 'AES128-SHA256'])
 
+    def test_ssl_matching(self):
+        session_factory = self.replay_flight_data(
+            'test_ssl_ciphers')
+        policy = self.load_policy({
+            'name': 'test-ssl-matching',
+            'resource': 'elb',
+            'filters': [
+                {'type': 'ssl-policy',
+                 'matching': '^Protocol-',
+                 'whitelist': ['Protocol-TLSv1', 'Protocol-TLSv1.1', 'Protocol-TLSv1.2']}
+            ]},
+            session_factory=session_factory)
+        resources = policy.run()
+        self.assertEqual(len(resources), 1)
+        self.assertEqual(
+            resources[0]['LoadBalancerName'],
+            'test-elb-invalid-policy')
 
     def test_filter_validation_no_blacklist(self):
         self.assertRaises(FilterValidationError,

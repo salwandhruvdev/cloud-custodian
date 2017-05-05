@@ -689,9 +689,9 @@ class Resize(Action):
     permissions = ('autoscaling:UpdateAutoScalingGroup',)
 
     def validate(self):
-        if self.data['desired_size'] != 'current':
-            raise FilterValidationError(
-                "only resizing desired/min to current capacity is supported")
+        #if self.data['desired_size'] != 'current':
+        #    raise FilterValidationError(
+        #        "only resizing desired/min to current capacity is supported")
         return self
 
     def process(self, asgs):
@@ -700,13 +700,16 @@ class Resize(Action):
         for a in asgs:
             current_size = len(a['Instances'])
             min_size = a['MinSize']
-            desired = a['DesiredCapacity']
+            if self.data['desired_size'] is 'current':
+                desired = min((current_size, a['DesiredCapacity']))
+            else:
+                desired = int(self.data['desired_size'])
             log.debug('desired %d to %s, min %d to %d',
                       desired, current_size, min_size, current_size)
             self.manager.retry(
                 client.update_auto_scaling_group,
                 AutoScalingGroupName=a['AutoScalingGroupName'],
-                DesiredCapacity=min((current_size, desired)),
+                DesiredCapacity=desired,
                 MinSize=min((current_size, min_size)))
 
 
@@ -1041,16 +1044,16 @@ class RenameTag(Action):
              'Key': destination_tag,
              'Value': source['Value']}])
         if propagate:
-            self.propogate_instance_tag(source, destination_tag, asg)
+            self.propagate_instance_tag(source, destination_tag, asg)
 
-    def propogate_instance_tag(self, source, destination_tag, asg):
+    def propagate_instance_tag(self, source, destination_tag, asg):
         client = local_session(self.manager.session_factory).client('ec2')
         client.delete_tags(
             Resources=[i['InstanceId'] for i in asg['Instances']],
             Tags=[{"Key": source['Key']}])
         client.create_tags(
             Resources=[i['InstanceId'] for i in asg['Instances']],
-            Tags=[{'Key': source['Key'], 'Value': source['Value']}])
+            Tags=[{'Key': destination_tag, 'Value': source['Value']}])
 
 
 @actions.register('mark-for-op')

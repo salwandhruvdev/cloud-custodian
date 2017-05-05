@@ -472,15 +472,15 @@ class HealthFilter(HealthEventFilter):
         if not resources:
             return resources
 
-        client = local_session(self.manager.session_factory).client('health')
-        f = self.get_filter()
+        client = local_session(self.manager.session_factory).client(
+            'health', region_name='us-east-1')
+        f = self.get_filter_parameters()
         resource_map = {}
 
         paginator = client.get_paginator('describe_events')
         events = list(itertools.chain(
             *[p['events']for p in paginator.paginate(filter=f)]))
-        entities = []
-        self.process_event(events, entities)
+        entities = self.process_event(events)
 
         event_map = {e['arn']: e for e in events}
         for e in entities:
@@ -543,40 +543,52 @@ class CopyInstanceTags(BaseAction):
         return perms
 
     def process(self, volumes):
+        vol_count = len(volumes)
         volumes = [v for v in volumes if v['Attachments']]
+        if len(volumes) != vol_count:
+            self.log.warning(
+                "ebs copy tags action implicitly filtered from %d to %d",
+                vol_count, len(volumes))
+        self.initialize(volumes)
         with self.executor_factory(max_workers=10) as w:
             futures = []
-            for volume_set in chunks(reversed(volumes), size=100):
+            for instance_set in chunks(reversed(
+                    self.instance_map.keys()), size=100):
                 futures.append(
-                    w.submit(self.process_volume_set, volume_set))
-
+                    w.submit(self.process_instance_set, instance_set))
             for f in as_completed(futures):
                 if f.exception():
                     self.log.error(
                         "Exception copying instance tags \n %s" % (
                             f.exception()))
 
-    def process_volume_set(self, volume_set):
+    def initialize(self, volumes):
         instance_vol_map = {}
-        for v in volume_set:
+        for v in volumes:
             instance_vol_map.setdefault(
                 v['Attachments'][0]['InstanceId'], []).append(v)
-
         instance_map = {
             i['InstanceId']: i for i in
             self.manager.get_resource_manager('ec2').get_resources(
                 instance_vol_map.keys())}
+        self.instance_vol_map = instance_vol_map
+        self.instance_map = instance_map
 
-        for i in instance_vol_map:
+    def process_instance_set(self, instance_ids):
+        client = local_session(self.manager.session_factory).client('ec2')
+        for i in instance_ids:
             try:
                 self.process_instance_volumes(
-                    instance_map[i], instance_vol_map[i])
+                    client,
+                    self.instance_map[i],
+                    self.instance_vol_map[i])
             except Exception as e:
                 self.log.exception(
-                    "Error copying instance tags to volumes \n %s" % e)
+                    "Error copy instance:%s tags to volumes: %s \n %s",
+                    i, ",".join([v['VolumeId'] for v in self.instance_vol_map[i]]),
+                    e)
 
-    def process_instance_volumes(self, instance, volumes):
-        client = local_session(self.manager.session_factory).client('ec2')
+    def process_instance_volumes(self, client, instance, volumes):
         for v in volumes:
             copy_tags = self.get_volume_tags(v, instance, v['Attachments'][0])
             if not copy_tags:
