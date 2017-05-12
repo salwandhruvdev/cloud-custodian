@@ -20,6 +20,7 @@ from c7n.query import QueryResourceManager
 from c7n.actions import BaseAction
 from c7n.utils import type_schema
 
+
 @resources.register('sqs')
 class SQS(QueryResourceManager):
 
@@ -72,6 +73,7 @@ class SQS(QueryResourceManager):
 class SQSCrossAccount(CrossAccountAccessFilter):
     permissions = ('sqs:GetQueueAttributes',)
 
+
 @SQS.action_registry.register('delete')
 class DeleteSqsQueue(BaseAction):
     """Action to delete a SQS queue
@@ -107,6 +109,7 @@ class DeleteSqsQueue(BaseAction):
             self.log.exception(
                 "Exception deleting queue:\n %s" % e)
 
+
 @SQS.action_registry.register('set-encryption')
 class SetEncryption(BaseAction):
     """Action to set encryption key on SQS queue
@@ -126,8 +129,7 @@ class SetEncryption(BaseAction):
     """
     schema = type_schema(
         'set-encryption',
-         key={'type': 'string'},
-         required=('key',))
+        key={'type': 'string'},required=('key',))
 
     permissions = ('sqs:SetQueueAttributes','kms:DescribeKey',)
 
