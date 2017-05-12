@@ -1,0 +1,22 @@
+{
+    "status_code": 200, 
+    "data": {
+        "QueueUrls": [
+            "https://us-west-2.queue.amazonaws.com/644160558196/test-sqs", 
+            "https://us-west-2.queue.amazonaws.com/644160558196/whit537-testing-mailer"
+        ], 
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "936dbef5-b14c-5057-9892-ef7bc73a04eb", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "936dbef5-b14c-5057-9892-ef7bc73a04eb", 
+                "content-length": "420", 
+                "server": "Server", 
+                "connection": "keep-alive", 
+                "date": "Thu, 11 May 2017 14:24:54 GMT", 
+                "content-type": "text/xml"
+            }
+        }
+    }
+}

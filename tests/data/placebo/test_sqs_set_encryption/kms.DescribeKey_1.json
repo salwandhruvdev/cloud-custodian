@@ -1,0 +1,38 @@
+{
+    "status_code": 200, 
+    "data": {
+        "KeyMetadata": {
+            "Origin": "AWS_KMS", 
+            "KeyId": "44d25a5c-7efa-44ed-8436-b9511ea921b3", 
+            "Description": "Custodian Test", 
+            "Enabled": true, 
+            "KeyUsage": "ENCRYPT_DECRYPT", 
+            "KeyState": "Enabled", 
+            "CreationDate": {
+                "hour": 6, 
+                "__class__": "datetime", 
+                "month": 5, 
+                "second": 38, 
+                "microsecond": 394000, 
+                "year": 2017, 
+                "day": 5, 
+                "minute": 56
+            }, 
+            "Arn": "arn:aws:kms:us-west-2:644160558196:key/44d25a5c-7efa-44ed-8436-b9511ea921b3", 
+            "AWSAccountId": "644160558196"
+        }, 
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "eb4366e1-3725-11e7-80c2-1763fb6d0630", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "eb4366e1-3725-11e7-80c2-1763fb6d0630", 
+                "content-length": "325", 
+                "server": "Server", 
+                "connection": "keep-alive", 
+                "date": "Fri, 12 May 2017 15:16:06 GMT", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }
+    }
+}
