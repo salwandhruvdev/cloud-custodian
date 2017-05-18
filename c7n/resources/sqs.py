@@ -131,23 +131,23 @@ class SetEncryption(BaseAction):
         'set-encryption',
         key={'type': 'string'},required=('key',))
 
-    permissions = ('sqs:SetQueueAttributes','kms:DescribeKey',)
+    permissions = ('sqs:SetQueueAttributes',)
 
     def process(self, queues):
+        # get KeyId
+        key = "alias/" + self.data.get('key')
+        self.key_id = local_session(self.manager.session_factory).client(
+            'kms').describe_key(KeyId=key)['KeyMetadata']['KeyId']
         with self.executor_factory(max_workers=2) as w:
             list(w.map(self.process_queue, queues))
 
     def process_queue(self, queue):
-        # get KeyId
-        key = "alias/" + self.data.get('key')
-        key_id = local_session(self.manager.session_factory).client(
-            'kms').describe_key(KeyId=key)['KeyMetadata']['KeyId']
         client = local_session(self.manager.session_factory).client('sqs')
         try:
             client.set_queue_attributes(
                 QueueUrl=queue['QueueUrl'],
                 Attributes={
-                    'KmsMasterKeyId': key_id
+                    'KmsMasterKeyId':self.key_id
                 }
             )
         except ClientError as e:

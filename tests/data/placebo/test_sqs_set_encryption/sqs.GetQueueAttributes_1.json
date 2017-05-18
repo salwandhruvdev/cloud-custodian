@@ -6,24 +6,24 @@
             "MessageRetentionPeriod": "345600", 
             "ApproximateNumberOfMessagesDelayed": "0", 
             "MaximumMessageSize": "262144", 
-            "CreatedTimestamp": "1494600997", 
+            "CreatedTimestamp": "1495124316", 
             "ApproximateNumberOfMessages": "0", 
             "ReceiveMessageWaitTimeSeconds": "0", 
             "DelaySeconds": "0", 
             "VisibilityTimeout": "30", 
-            "LastModifiedTimestamp": "1494600997", 
-            "QueueArn": "arn:aws:sqs:us-west-2:644160558196:test-sqs"
+            "LastModifiedTimestamp": "1495124316", 
+            "QueueArn": "arn:aws:sqs:us-west-2:644160558196:sqs-test"
         }, 
         "ResponseMetadata": {
             "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "b7351969-3a5a-575f-9726-48e6e9afb94e", 
+            "RequestId": "f7a012e9-b73a-5282-8920-437e7ca59e61", 
             "HTTPHeaders": {
-                "x-amzn-requestid": "b7351969-3a5a-575f-9726-48e6e9afb94e", 
+                "x-amzn-requestid": "f7a012e9-b73a-5282-8920-437e7ca59e61", 
                 "content-length": "1162", 
                 "server": "Server", 
                 "connection": "keep-alive", 
-                "date": "Fri, 12 May 2017 15:16:05 GMT", 
+                "date": "Thu, 18 May 2017 16:18:39 GMT", 
                 "content-type": "text/xml"
             }
         }
