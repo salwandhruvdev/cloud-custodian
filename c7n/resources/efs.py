@@ -34,6 +34,8 @@ class ElasticFileSystem(QueryResourceManager):
         # resource type for resource tagging api
         resource_type = 'elasticfilesystem:file-system'
         detail_spec = ('describe_tags', 'FileSystemId', 'FileSystemId', None)
+        filter_name = 'FileSystemId'
+        filter_type = 'scalar'
 
     def augment(self, resources):
         return universal_augment(
