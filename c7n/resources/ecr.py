@@ -124,7 +124,7 @@ class RemovePolicyStatement(BaseAction):
                 if e.response['Error']['Code'] != ErrPolicyNotFound:
                     raise
                 resource['Policy'] = None
-    
+
         if not resource['Policy']:
             return
 
