@@ -19,14 +19,8 @@ import json
 from c7n.filters import CrossAccountAccessFilter
 from c7n.manager import resources
 from c7n.query import QueryResourceManager
-from c7n.actions import ActionRegistry, BaseAction
-from c7n.filters import FilterRegistry
-from c7n.utils import (
-    chunks, local_session, set_annotation, type_schema, dumps)
-from concurrent.futures import as_completed
-
-filters = FilterRegistry('ecr.filters')
-actions = ActionRegistry('ecr.actions')
+from c7n.actions import BaseAction
+from c7n.utils import local_session, type_schema
 
 
 @resources.register('ecr')
@@ -39,11 +33,11 @@ class ECR(QueryResourceManager):
         id = "repositoryArn"
         dimension = None
 
-    filter_registry = filters
-    action_registry = actions
+
+ErrPolicyNotFound = 'RepositoryPolicyNotFoundException'
 
 
-@filters.register('cross-account')
+@ECR.filter_registry.register('cross-account')
 class ECRCrossAccountAccessFilter(CrossAccountAccessFilter):
     """Filters all EC2 Container Registries (ECR) with cross-account access
 
@@ -70,7 +64,7 @@ class ECRCrossAccountAccessFilter(CrossAccountAccessFilter):
                 r['Policy'] = client.get_repository_policy(
                     repositoryName=r['repositoryName'])['policyText']
             except ClientError as e:
-                if e.response['Error']['Code'] == 'RepositoryPolicyNotFoundException':
+                if e.response['Error']['Code'] == ErrPolicyNotFound:
                     return None
                 raise
             return r
@@ -79,10 +73,11 @@ class ECRCrossAccountAccessFilter(CrossAccountAccessFilter):
         with self.executor_factory(max_workers=3) as w:
             resources = list(filter(None, w.map(_augment, resources)))
 
-        return super(ECRCrossAccountAccessFilter, self).process(resources, event)
+        return super(ECRCrossAccountAccessFilter, self).process(
+            resources, event)
 
 
-@actions.register('remove-statements')
+@ECR.action_registry.register('remove-statements')
 class RemovePolicyStatement(BaseAction):
     """Action to remove policy statements from ECR
 
@@ -109,35 +104,56 @@ class RemovePolicyStatement(BaseAction):
     permissions = ("ecr:SetRepositoryPolicy",)
 
     def process(self, resources):
-        with self.executor_factory(max_workers=3) as w:
-            futures = {}
-            results = []
-            for resource in resources:
-                futures[w.submit(self.process_registries, resource)] = resource
-            for f in as_completed(futures):
-                if f.exception():
-                    self.log.error('error modifying registry:%s\n%s',
-                                   resource['repositoryName'], f.exception())
-                elif f.result():
-                    results.append(resource)
-            return results
+        results = []
+        client = local_session(self.manager.session_factory).client('ecr')
+        for r in resources:
+            try:
+                if self.process_resource(client, r):
+                    results.append(r)
+            except:
+                self.log.exception(
+                    "Error processing ecr registry:%s", r['repositoryArn'])
+        return results
 
-    def process_registries(self, resource):
-        p = resource.get('Policy')
-        # print(p)
-        if p is None:
+    def process_resource(self, client, resource):
+        if 'Policy' not in resource:
+            try:
+                resource['Policy'] = client.get_repository_policy(
+                    repositoryName=resource['repositoryName'])['policyText']
+            except ClientError as e:
+                if e.response['Error']['Code'] != ErrPolicyNotFound:
+                    raise
+                resource['Policy'] = None
+    
+        if not resource['Policy']:
             return
+
+        p = json.loads(resource['Policy'])
+        statements, found = self.process_policy(p, resource)
+
+        if statements is None:
+            return
+        if not statements:
+            client.delete_repository_policy(
+                repositoryName=resource['repositoryName'])
         else:
-            p = json.loads(p)
+            client.set_repository_policy(
+                repositoryName=resource['repositoryName'],
+                policyText=json.dumps(p))
+        return {'Name': resource['repositoryName'],
+                'State': 'PolicyRemoved',
+                'Statements': found}
+
+    def process_policy(self, policy, resource):
+        statement_ids = self.data.get('statement_ids')
 
         found = []
-        statement_ids = self.data.get('statement_ids')
-        statements = p.get('Statement', [])
+        statements = policy.get('Statement', [])
         resource_statements = resource.get(
             CrossAccountAccessFilter.annotation_key, ())
 
         for s in list(statements):
-            if statement_ids == 'matched':
+            if statement_ids == ['matched']:
                 if s in resource_statements:
                     found.append(s)
                     statements.remove(s)
@@ -145,11 +161,5 @@ class RemovePolicyStatement(BaseAction):
                 found.append(s)
                 statements.remove(s)
         if not found:
-            return
-        #
-        client = local_session(self.manager.session_factory).client('ecr')
-        if not statements:
-            client.delete_repository_policy(repositoryName=resource['repositoryName'])
-        else:
-            client.set_repository_policy(repositoryName=resource['repositoryName'], policyText=json.dumps(p))
-        return {'Name': resource['repositoryName'], 'State': 'PolicyRemoved', 'Statements': found}
+            return None, found
+        return statements, found
