@@ -2,21 +2,28 @@
     "status_code": 200, 
     "data": {
         "ResponseMetadata": {
+            "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "89d686a7-2a8a-11e6-8fb8-872f0e7bbf79"
+            "RequestId": "b8bdfc13-97b6-11e7-9df3-7315beb06cc6", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "b8bdfc13-97b6-11e7-9df3-7315beb06cc6", 
+                "date": "Tue, 12 Sep 2017 12:34:29 GMT", 
+                "content-length": "553", 
+                "content-type": "text/xml"
+            }
         }, 
         "TagList": [
             {
+                "Value": "hello world", 
+                "Key": "xyz"
+            }, 
+            {
+                "Value": "test", 
+                "Key": "Owner"
+            }, 
+            {
                 "Value": "postgres", 
                 "Key": "Platform"
-            }, 
-            {
-                "Value": "Resource does not meet policy: delete@2016/05/21", 
-                "Key": "custodian_next"
-            }, 
-            {
-                "Value": "other", 
-                "Key": "workload-type"
             }
         ]
     }

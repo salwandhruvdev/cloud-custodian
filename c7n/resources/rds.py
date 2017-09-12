@@ -68,6 +68,8 @@ import c7n.filters.vpc as net_filters
 from c7n.manager import resources
 from c7n.query import QueryResourceManager, DescribeSource, ConfigSource
 from c7n import tags
+from c7n.tags import universal_augment, register_universal_tags
+
 from c7n.utils import (
     local_session, type_schema,
     get_retry, chunks, generate_arn, snapshot_identifier)
@@ -78,8 +80,6 @@ log = logging.getLogger('custodian.rds')
 filters = FilterRegistry('rds.filters')
 actions = ActionRegistry('rds.actions')
 
-filters.register('tag-count', tags.TagCountFilter)
-filters.register('marked-for-op', tags.TagActionFilter)
 filters.register('health-event', HealthEventFilter)
 actions.register('auto-tag-user', AutoTagUser)
 
@@ -118,6 +118,7 @@ class RDS(QueryResourceManager):
     _generate_arn = None
     retry = staticmethod(get_retry(('Throttled',)))
     permissions = ('rds:ListTagsForResource',)
+    augment = universal_augment
 
     def __init__(self, data, options):
         super(RDS, self).__init__(data, options)
@@ -130,59 +131,9 @@ class RDS(QueryResourceManager):
                 account_id=self.account_id, resource_type='db', separator=':')
         return self._generate_arn
 
-    def get_source(self, source_type):
-        if source_type == 'describe':
-            return DescribeRDS(self)
-        elif source_type == 'config':
-            return ConfigRDS(self)
-        raise ValueError("Unsupported source: %s for %s" % (
-            source_type, self.resource_type.config_type))
-
-
-class DescribeRDS(DescribeSource):
-
-    def augment(self, dbs):
-        filter(None, _rds_tags(
-            self.manager.get_model(),
-            dbs,
-            self.manager.session_factory,
-            self.manager.executor_factory,
-            self.manager.generate_arn,
-            self.manager.retry))
-        return dbs
-
-
-class ConfigRDS(ConfigSource):
-
-    def load_resource(self, item):
-        resource = super(ConfigRDS, self).load_resource(item)
-        resource['Tags'] = [{u'Key': t['key'], u'Value': t['value']}
-          for t in json.loads(item['Tags'])]
-        return resource
-
-
-def _rds_tags(
-        model, dbs, session_factory, executor_factory, generator, retry):
-    """Augment rds instances with their respective tags."""
-
-    def process_tags(db):
-        client = local_session(session_factory).client('rds')
-        arn = generator(db[model.id])
-        tag_list = None
-        try:
-            tag_list = retry(client.list_tags_for_resource,
-                             ResourceName=arn)['TagList']
-        except ClientError as e:
-            if e.response['Error']['Code'] not in ['DBInstanceNotFound']:
-                log.warning("Exception getting rds tags  \n %s", e)
-            return None
-        db['Tags'] = tag_list or []
-        return db
-
-    # Rds maintains a low api call limit, so this can take some time :-(
-    with executor_factory(max_workers=1) as w:
-        return list(w.map(process_tags, dbs))
-
+register_universal_tags(
+    RDS.filter_registry,
+    RDS.action_registry)
 
 def _db_instance_eligible_for_backup(resource):
     db_instance_id = resource['DBInstanceIdentifier']
@@ -341,40 +292,6 @@ class KmsKeyAlias(ResourceKmsKeyAlias):
         return self.get_matching_aliases(dbs)
 
 
-@actions.register('mark-for-op')
-class TagDelayedAction(tags.TagDelayedAction):
-    """Mark a RDS instance for specific custodian action
-
-    :example:
-
-        .. code-block: yaml
-
-            policies:
-              - name: mark-for-delete
-                resource: rds
-                filters:
-                  - type: default-vpc
-                actions:
-                  - type: mark-for-op
-                    op: delete
-                    days: 7
-    """
-    schema = type_schema(
-        'mark-for-op', rinherit=tags.TagDelayedAction.schema)
-    permissions = ('rds:AddTagsToResource',)
-
-    batch_size = 5
-
-    def process(self, dbs):
-        return super(TagDelayedAction, self).process(dbs)
-
-    def process_resource_set(self, dbs, tags):
-        client = local_session(self.manager.session_factory).client('rds')
-        for db in dbs:
-            arn = self.manager.generate_arn(db['DBInstanceIdentifier'])
-            client.add_tags_to_resource(ResourceName=arn, Tags=tags)
-
-
 @actions.register('auto-patch')
 class AutoPatch(BaseAction):
     """Toggle AutoMinorUpgrade flag on RDS instance
@@ -519,82 +436,6 @@ class UpgradeMinor(BaseAction):
                 DBInstanceIdentifier=r['DBInstanceIdentifier'],
                 EngineVersion=r['c7n-rds-engine-upgrade'],
                 ApplyImmediately=self.data.get('immediate', False))
-
-
-@actions.register('tag')
-@actions.register('mark')
-class Tag(tags.Tag):
-    """Mark/tag a RDS instance with a key/value
-
-    :example:
-
-        .. code-block: yaml
-
-            policies:
-              - name: rds-owner-tag
-                resource: rds
-                filters:
-                  - "tag:OwnerName": absent
-                actions:
-                  - type: tag
-                    key: OwnerName
-                    value: OwnerName
-    """
-
-    concurrency = 2
-    batch_size = 5
-    permissions = ('rds:AddTagsToResource',)
-
-    def process_resource_set(self, dbs, ts):
-        client = local_session(
-            self.manager.session_factory).client('rds')
-        for db in dbs:
-            arn = self.manager.generate_arn(db['DBInstanceIdentifier'])
-            client.add_tags_to_resource(ResourceName=arn, Tags=ts)
-
-
-@actions.register('remove-tag')
-@actions.register('unmark')
-class RemoveTag(tags.RemoveTag):
-    """Removes a tag or set of tags from RDS instances
-
-    :example:
-
-        .. code-block: yaml
-
-            policies:
-              - name: rds-unmark-instances
-                resource: rds
-                filters:
-                  - "tag:ExpiredTag": present
-                actions:
-                  - type: unmark
-                    tags: ["ExpiredTag"]
-    """
-
-    concurrency = 2
-    batch_size = 5
-    permissions = ('rds:RemoveTagsFromResource',)
-
-    def process_resource_set(self, dbs, tag_keys):
-        client = local_session(
-            self.manager.session_factory).client('rds')
-        for db in dbs:
-            arn = self.manager.generate_arn(db['DBInstanceIdentifier'])
-            client.remove_tags_from_resource(
-                ResourceName=arn, TagKeys=tag_keys)
-
-
-@actions.register('tag-trim')
-class TagTrim(tags.TagTrim):
-
-    permissions = ('rds:RemoveTagsFromResource',)
-
-    def process_tag_removal(self, resource, candidates):
-        client = local_session(
-            self.manager.session_factory).client('rds')
-        arn = self.manager.generate_arn(resource['DBInstanceIdentifier'])
-        client.remove_tags_from_resource(ResourceName=arn, TagKeys=candidates)
 
 
 def _eligible_start_stop(db, state="available"):

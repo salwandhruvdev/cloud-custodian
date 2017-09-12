@@ -1,0 +1,32 @@
+{
+    "status_code": 200, 
+    "data": {
+        "PaginationToken": "", 
+        "ResourceTagMappingList": [
+            {
+                "ResourceARN": "arn:aws:rds:us-west-2:644160558196:db:test-test", 
+                "Tags": [
+                    {
+                        "Value": "test", 
+                        "Key": "Owner"
+                    }, 
+                    {
+                        "Value": "postgres", 
+                        "Key": "Platform"
+                    }
+                ]
+            }
+        ], 
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "b8018995-97b6-11e7-ba7c-573e850e8431", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "b8018995-97b6-11e7-ba7c-573e850e8431", 
+                "date": "Tue, 12 Sep 2017 12:34:28 GMT", 
+                "content-length": "193", 
+                "content-type": "application/x-amz-json-1.1"
+            }
+        }
+    }
+}

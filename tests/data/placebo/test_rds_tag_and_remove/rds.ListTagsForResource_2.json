@@ -2,13 +2,24 @@
     "status_code": 200, 
     "data": {
         "ResponseMetadata": {
+            "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "8a1c90ed-2a8a-11e6-9ccc-a588cfdde32a"
+            "RequestId": "b9e8e7a0-97b6-11e7-9df3-7315beb06cc6", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "b9e8e7a0-97b6-11e7-9df3-7315beb06cc6", 
+                "date": "Tue, 12 Sep 2017 12:34:31 GMT", 
+                "content-length": "470", 
+                "content-type": "text/xml"
+            }
         }, 
         "TagList": [
             {
-                "Value": "other", 
-                "Key": "workload-type"
+                "Value": "postgres", 
+                "Key": "Platform"
+            }, 
+            {
+                "Value": "test", 
+                "Key": "Owner"
             }
         ]
     }
