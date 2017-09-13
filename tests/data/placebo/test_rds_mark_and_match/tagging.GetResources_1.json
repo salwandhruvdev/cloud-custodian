@@ -15,8 +15,8 @@
                         "Key": "Platform"
                     }, 
                     {
-                        "Value": "Resource does not meet policy: delete@2017/09/13", 
-                        "Key": "custodian_next"
+                        "Value": "yes", 
+                        "Key": "custodian_upgrade"
                     }
                 ]
             }
@@ -24,11 +24,11 @@
         "ResponseMetadata": {
             "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "b03eec78-97c3-11e7-aaf0-e9f448291ceb", 
+            "RequestId": "5fab9a03-9895-11e7-99c6-9dcc9ab97b69", 
             "HTTPHeaders": {
-                "x-amzn-requestid": "b03eec78-97c3-11e7-aaf0-e9f448291ceb", 
-                "date": "Tue, 12 Sep 2017 14:07:18 GMT", 
-                "content-length": "277", 
+                "x-amzn-requestid": "5fab9a03-9895-11e7-99c6-9dcc9ab97b69", 
+                "date": "Wed, 13 Sep 2017 15:08:18 GMT", 
+                "content-length": "235", 
                 "content-type": "application/x-amz-json-1.1"
             }
         }

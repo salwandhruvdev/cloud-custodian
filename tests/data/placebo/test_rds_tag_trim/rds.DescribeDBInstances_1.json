@@ -13,16 +13,6 @@
                         "VpcSecurityGroupId": "sg-f9cc4d9f"
                     }
                 ], 
-                "InstanceCreateTime": {
-                    "hour": 22, 
-                    "__class__": "datetime", 
-                    "month": 9, 
-                    "second": 0, 
-                    "microsecond": 514000, 
-                    "year": 2017, 
-                    "day": 11, 
-                    "minute": 43
-                }, 
                 "CopyTagsToSnapshot": false, 
                 "OptionGroupMemberships": [
                     {
@@ -30,19 +20,11 @@
                         "OptionGroupName": "default:postgres-9-6"
                     }
                 ], 
-                "PendingModifiedValues": {}, 
+                "PendingModifiedValues": {
+                    "MasterUserPassword": "****"
+                }, 
                 "Engine": "postgres", 
                 "MultiAZ": true, 
-                "LatestRestorableTime": {
-                    "hour": 12, 
-                    "__class__": "datetime", 
-                    "month": 9, 
-                    "second": 21, 
-                    "microsecond": 0, 
-                    "year": 2017, 
-                    "day": 12, 
-                    "minute": 21
-                }, 
                 "DBSecurityGroups": [], 
                 "DBParameterGroups": [
                     {
@@ -51,7 +33,7 @@
                     }
                 ], 
                 "AutoMinorVersionUpgrade": true, 
-                "PreferredBackupWindow": "11:58-12:28", 
+                "PreferredBackupWindow": "11:08-11:38", 
                 "DBSubnetGroup": {
                     "Subnets": [
                         {
@@ -81,46 +63,39 @@
                     "DBSubnetGroupDescription": "default", 
                     "SubnetGroupStatus": "Complete"
                 }, 
-                "SecondaryAvailabilityZone": "us-west-2b", 
                 "ReadReplicaDBInstanceIdentifiers": [], 
                 "AllocatedStorage": 100, 
-                "DBInstanceArn": "arn:aws:rds:us-west-2:644160558196:db:test-test", 
+                "DBInstanceArn": "arn:aws:rds:us-west-2:644160558196:db:test", 
                 "BackupRetentionPeriod": 7, 
                 "DBName": "test", 
-                "PreferredMaintenanceWindow": "sun:06:47-sun:07:17", 
-                "Endpoint": {
-                    "HostedZoneId": "Z1PVIF0B656C1W", 
-                    "Port": 5432, 
-                    "Address": "test-test.cnhganveedh2.us-west-2.rds.amazonaws.com"
-                }, 
-                "DBInstanceStatus": "available", 
+                "PreferredMaintenanceWindow": "thu:09:50-thu:10:20", 
+                "DBInstanceStatus": "creating", 
                 "IAMDatabaseAuthenticationEnabled": false, 
                 "EngineVersion": "9.6.2", 
-                "EnhancedMonitoringResourceArn": "arn:aws:logs:us-west-2:644160558196:log-group:RDSOSMetrics:log-stream:db-VM5DMYR6QV7HCDPMZN5S4FHDVM", 
                 "AvailabilityZone": "us-west-2c", 
                 "DomainMemberships": [], 
                 "MonitoringRoleArn": "arn:aws:iam::644160558196:role/rds-monitoring-role", 
                 "StorageType": "io1", 
-                "DbiResourceId": "db-VM5DMYR6QV7HCDPMZN5S4FHDVM", 
+                "DbiResourceId": "db-CFLJZEEFUQFAIUN3NA3C2ZSTNA", 
                 "CACertificateIdentifier": "rds-ca-2015", 
                 "Iops": 1000, 
                 "StorageEncrypted": true, 
                 "KmsKeyId": "arn:aws:kms:us-west-2:644160558196:key/1ec621db-4406-4cb9-8e85-812386071791", 
                 "DBInstanceClass": "db.m4.xlarge", 
                 "DbInstancePort": 0, 
-                "DBInstanceIdentifier": "test-test"
+                "DBInstanceIdentifier": "test"
             }
         ], 
         "ResponseMetadata": {
             "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "eb8a3f9f-97b5-11e7-aaef-13099caac93e", 
+            "RequestId": "ca474001-9897-11e7-9ebb-1bf908509e4a", 
             "HTTPHeaders": {
-                "x-amzn-requestid": "eb8a3f9f-97b5-11e7-aaef-13099caac93e", 
+                "x-amzn-requestid": "ca474001-9897-11e7-9ebb-1bf908509e4a", 
                 "vary": "Accept-Encoding", 
-                "content-length": "4667", 
+                "content-length": "4150", 
                 "content-type": "text/xml", 
-                "date": "Tue, 12 Sep 2017 12:28:45 GMT"
+                "date": "Wed, 13 Sep 2017 15:25:35 GMT"
             }
         }
     }

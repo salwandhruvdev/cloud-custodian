@@ -438,6 +438,18 @@ class UpgradeMinor(BaseAction):
                 ApplyImmediately=self.data.get('immediate', False))
 
 
+@actions.register('tag-trim')
+class TagTrim(tags.TagTrim):
+
+    permissions = ('rds:RemoveTagsFromResource',)
+
+    def process_tag_removal(self, resource, candidates):
+        client = local_session(
+            self.manager.session_factory).client('rds')
+        arn = self.manager.generate_arn(resource['DBInstanceIdentifier'])
+        client.remove_tags_from_resource(ResourceName=arn, TagKeys=candidates)
+
+
 def _eligible_start_stop(db, state="available"):
 
     if db.get('DBInstanceStatus') != state:
