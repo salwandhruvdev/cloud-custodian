@@ -4,19 +4,19 @@
         "PaginationToken": "", 
         "ResourceTagMappingList": [
             {
-                "ResourceARN": "arn:aws:rds:us-west-2:644160558196:db:test-test", 
+                "ResourceARN": "arn:aws:rds:us-west-2:644160558196:db:c7n-mysql-test-03", 
                 "Tags": [
                     {
                         "Value": "test", 
                         "Key": "Owner"
                     }, 
                     {
-                        "Value": "postgres", 
-                        "Key": "Platform"
+                        "Value": "Resource does not meet policy: upgrade@2017/09/19", 
+                        "Key": "custodian_upgrade"
                     }, 
                     {
-                        "Value": "yes", 
-                        "Key": "custodian_upgrade"
+                        "Value": "production", 
+                        "Key": "workload-type"
                     }
                 ]
             }
@@ -24,11 +24,11 @@
         "ResponseMetadata": {
             "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "b0b666f4-97e8-11e7-8c87-d16db15e4e0f", 
+            "RequestId": "2a813b3a-9a21-11e7-93ba-e3796fe62edb", 
             "HTTPHeaders": {
-                "x-amzn-requestid": "b0b666f4-97e8-11e7-8c87-d16db15e4e0f", 
-                "date": "Tue, 12 Sep 2017 18:32:10 GMT", 
-                "content-length": "235", 
+                "x-amzn-requestid": "2a813b3a-9a21-11e7-93ba-e3796fe62edb", 
+                "date": "Fri, 15 Sep 2017 14:21:28 GMT", 
+                "content-length": "296", 
                 "content-type": "application/x-amz-json-1.1"
             }
         }

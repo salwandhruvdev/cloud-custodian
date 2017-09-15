@@ -131,9 +131,11 @@ class RDS(QueryResourceManager):
                 account_id=self.account_id, resource_type='db', separator=':')
         return self._generate_arn
 
+
 register_universal_tags(
     RDS.filter_registry,
     RDS.action_registry)
+
 
 def _db_instance_eligible_for_backup(resource):
     db_instance_id = resource['DBInstanceIdentifier']
