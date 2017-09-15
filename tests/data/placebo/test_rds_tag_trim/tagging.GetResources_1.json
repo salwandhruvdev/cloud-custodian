@@ -4,8 +4,12 @@
         "PaginationToken": "", 
         "ResourceTagMappingList": [
             {
-                "ResourceARN": "arn:aws:rds:us-west-2:644160558196:db:test", 
+                "ResourceARN": "arn:aws:rds:us-east-1:644160558196:db:test-03", 
                 "Tags": [
+                    {
+                        "Value": "test-test", 
+                        "Key": "Name"
+                    }, 
                     {
                         "Value": "test", 
                         "Key": "Owner"
@@ -13,6 +17,10 @@
                     {
                         "Value": "postgres", 
                         "Key": "Platform"
+                    }, 
+                    {
+                        "Value": "Resource does not meet policy: delete@2017/09/16", 
+                        "Key": "custodian_next"
                     }, 
                     {
                         "Value": "production", 
@@ -24,11 +32,11 @@
         "ResponseMetadata": {
             "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "caaf29ca-9897-11e7-85e8-459ec8b4531a", 
+            "RequestId": "f015293a-9a27-11e7-9fbd-eda3764941fe", 
             "HTTPHeaders": {
-                "x-amzn-requestid": "caaf29ca-9897-11e7-85e8-459ec8b4531a", 
-                "date": "Wed, 13 Sep 2017 15:25:36 GMT", 
-                "content-length": "233", 
+                "x-amzn-requestid": "f015293a-9a27-11e7-9fbd-eda3764941fe", 
+                "date": "Fri, 15 Sep 2017 15:09:57 GMT", 
+                "content-length": "355", 
                 "content-type": "application/x-amz-json-1.1"
             }
         }

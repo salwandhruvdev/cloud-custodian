@@ -5,13 +5,13 @@
         "ResponseMetadata": {
             "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "2ae33150-9a21-11e7-81be-b1d491c6807a", 
+            "RequestId": "a22e2879-9a29-11e7-995a-77ea9a57eb1e", 
             "HTTPHeaders": {
-                "x-amzn-requestid": "2ae33150-9a21-11e7-81be-b1d491c6807a", 
+                "x-amzn-requestid": "a22e2879-9a29-11e7-995a-77ea9a57eb1e", 
                 "vary": "Accept-Encoding", 
-                "content-length": "262059", 
+                "content-length": "262481", 
                 "content-type": "text/xml", 
-                "date": "Fri, 15 Sep 2017 14:21:30 GMT"
+                "date": "Fri, 15 Sep 2017 15:22:05 GMT"
             }
         }, 
         "DBEngineVersions": [
@@ -162,6 +162,13 @@
                         "AutoUpgrade": false, 
                         "Description": "10.1.19", 
                         "EngineVersion": "10.1.19"
+                    }, 
+                    {
+                        "Engine": "mariadb", 
+                        "IsMajorVersionUpgrade": true, 
+                        "AutoUpgrade": false, 
+                        "Description": "10.1.23", 
+                        "EngineVersion": "10.1.23"
                     }
                 ]
             }, 
@@ -2301,7 +2308,7 @@
                 }, 
                 "DBEngineDescription": "Oracle Database Standard Edition", 
                 "EngineVersion": "11.2.0.4.v12", 
-                "DBEngineVersionDescription": "Oracle 11.2.0.4.v12", 
+                "DBEngineVersionDescription": "oracle-se 11.2.0.4.v12", 
                 "ValidUpgradeTarget": [
                     {
                         "Engine": "oracle-se2", 
@@ -3270,7 +3277,7 @@
                 }, 
                 "DBEngineDescription": "Oracle Database Standard Edition Two", 
                 "EngineVersion": "12.1.0.2.v8", 
-                "DBEngineVersionDescription": "Oracle 12.1.0.2.v8", 
+                "DBEngineVersionDescription": "oracle-se2 12.1.0.2.v8", 
                 "ValidUpgradeTarget": []
             }, 
             {
@@ -3305,7 +3312,7 @@
                         "Engine": "postgres", 
                         "IsMajorVersionUpgrade": false, 
                         "AutoUpgrade": false, 
-                        "Description": "PostgreSQL 9.3.17-R1", 
+                        "Description": " PostgreSQL 9.3.17-R1", 
                         "EngineVersion": "9.3.17"
                     }, 
                     {
@@ -3354,7 +3361,7 @@
                         "Engine": "postgres", 
                         "IsMajorVersionUpgrade": false, 
                         "AutoUpgrade": false, 
-                        "Description": "PostgreSQL 9.3.17-R1", 
+                        "Description": " PostgreSQL 9.3.17-R1", 
                         "EngineVersion": "9.3.17"
                     }, 
                     {
@@ -3390,7 +3397,7 @@
                         "Engine": "postgres", 
                         "IsMajorVersionUpgrade": false, 
                         "AutoUpgrade": false, 
-                        "Description": "PostgreSQL 9.3.17-R1", 
+                        "Description": " PostgreSQL 9.3.17-R1", 
                         "EngineVersion": "9.3.17"
                     }, 
                     {
@@ -3414,7 +3421,7 @@
                 "DBParameterGroupFamily": "postgres9.3", 
                 "DBEngineDescription": "PostgreSQL", 
                 "EngineVersion": "9.3.17", 
-                "DBEngineVersionDescription": "PostgreSQL 9.3.17-R1", 
+                "DBEngineVersionDescription": " PostgreSQL 9.3.17-R1", 
                 "ValidUpgradeTarget": [
                     {
                         "Engine": "postgres", 

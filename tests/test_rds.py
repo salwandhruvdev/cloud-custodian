@@ -120,7 +120,7 @@ class RDSTest(BaseTest):
             'name': 'rds-tags',
             'resource': 'rds',
             'filters': [
-                {'tag:test-this': 'hello'}]},
+                {'tag:Platform': 'postgres'}]},
             session_factory=session_factory)
         resources = p.run()
         self.assertEqual(len(resources), 1)
@@ -396,7 +396,7 @@ class RDSTest(BaseTest):
                   'op': 'upgrade', 'skew': 4}],
              'actions': [{
                  'type': 'upgrade',
-                 'immediate': True}]}, session_factory=session_factory)
+                 'immediate': False}]}, session_factory=session_factory)
         resources = p.run()
         self.assertEqual(len(resources), 1)
         self.assertEqual(

@@ -4,11 +4,11 @@
         "ResponseMetadata": {
             "RetryAttempts": 0, 
             "HTTPStatusCode": 200, 
-            "RequestId": "b8bdfc13-97b6-11e7-9df3-7315beb06cc6", 
+            "RequestId": "76d9b2ed-9a27-11e7-b8d0-5165c9790e17", 
             "HTTPHeaders": {
-                "x-amzn-requestid": "b8bdfc13-97b6-11e7-9df3-7315beb06cc6", 
-                "date": "Tue, 12 Sep 2017 12:34:29 GMT", 
-                "content-length": "553", 
+                "x-amzn-requestid": "76d9b2ed-9a27-11e7-b8d0-5165c9790e17", 
+                "date": "Fri, 15 Sep 2017 15:06:34 GMT", 
+                "content-length": "698", 
                 "content-type": "text/xml"
             }
         }, 
@@ -18,12 +18,16 @@
                 "Key": "xyz"
             }, 
             {
-                "Value": "test", 
-                "Key": "Owner"
+                "Value": "production", 
+                "Key": "workload-type"
             }, 
             {
                 "Value": "postgres", 
                 "Key": "Platform"
+            }, 
+            {
+                "Value": "Resource does not meet policy: delete@2017/09/16", 
+                "Key": "custodian_next"
             }
         ]
     }
