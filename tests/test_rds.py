@@ -983,7 +983,7 @@ class Resize(BaseTest):
                 'placebo', flight_data, 'rds.CreateDBInstance_1.json')
             pill = json.load(open(pill_path))
             return pill['data']['DBInstance']['DBInstanceIdentifier']
-    #
+
     def install_modification_pending_waiter(self, waiters):
         if 'DBInstanceModificationPending' in waiters:
             return

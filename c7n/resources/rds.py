@@ -117,7 +117,6 @@ class RDS(QueryResourceManager):
     action_registry = actions
     _generate_arn = None
     retry = staticmethod(get_retry(('Throttled',)))
-    permissions = ('rds:ListTagsForResource',)
     augment = universal_augment
 
     def __init__(self, data, options):
