@@ -129,6 +129,30 @@ class RDS(QueryResourceManager):
                 account_id=self.account_id, resource_type='db', separator=':')
         return self._generate_arn
 
+    def get_source(self, source_type):
+        if source_type == 'describe':
+            return DescribeRDS(self)
+        elif source_type == 'config':
+            return ConfigRDS(self)
+        raise ValueError("Unsupported source: %s for %s" % (
+            source_type, self.resource_type.config_type))
+
+
+class DescribeRDS(DescribeSource):
+
+    def augment(self, dbs):
+        return universal_augment(
+            self, super(DescribeRDS, self).augment(dbs))
+
+
+class ConfigRDS(ConfigSource):
+
+    def load_resource(self, item):
+        resource = super(ConfigRDS, self).load_resource(item)
+        resource['Tags'] = [{u'Key': t['key'], u'Value': t['value']}
+          for t in json.loads(item['Tags'])]
+        return resource
+
 
 register_universal_tags(
     RDS.filter_registry,
