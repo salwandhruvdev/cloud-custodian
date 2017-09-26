@@ -862,7 +862,7 @@ class RDSSnapshot(QueryResourceManager):
 
     class resource_type(object):
         service = 'rds'
-        type = 'snapshot'
+        type = 'rds-snapshot'
         enum_spec = ('describe_db_snapshots', 'DBSnapshots', None)
         name = id = 'DBSnapshotIdentifier'
         filter_name = None
@@ -870,6 +870,7 @@ class RDSSnapshot(QueryResourceManager):
         dimension = None
         date = 'SnapshotCreateTime'
         config_type = "AWS::RDS::DBSnapshot"
+        resource_type = "rds:snapshot"
 
     filter_registry = FilterRegistry('rds-snapshot.filters')
     action_registry = ActionRegistry('rds-snapshot.actions')
