@@ -911,6 +911,7 @@ class ConfigRDSSnapshot(ConfigSource):
         # TODO: Load DBSnapshotAttributes into annotation
         return resource
 
+
 register_universal_tags(
     RDSSnapshot.filter_registry,
     RDSSnapshot.action_registry)
