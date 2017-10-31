@@ -229,10 +229,13 @@ class TagQueue(Tag):
     def process_resource_set(self, queues, tags):
         client = local_session(self.manager.session_factory).client(
             'sqs')
+        tag_dict = {}
+        for t in tags:
+            tag_dict[t['Key']] = t['Value']
         for queue in queues:
             queue_url = queue['QueueUrl']
             try:
-                client.tag_queue(QueueUrl=queue_url, Tags=tags)
+                client.tag_queue(QueueUrl=queue_url, Tags=tag_dict)
             except Exception as err:
                 self.log.exception(
                     'Exception tagging queue %s: %s',
