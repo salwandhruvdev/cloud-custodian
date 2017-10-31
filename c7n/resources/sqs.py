@@ -26,8 +26,8 @@ from c7n.actions import BaseAction
 from c7n.utils import type_schema
 from c7n.tags import RemoveTag, Tag, TagActionFilter, TagDelayedAction
 
-# filters = FilterRegistry('sqs.filters')
-# filters.register('marked-for-op', TagActionFilter)
+filters = FilterRegistry('sqs.filters')
+filters.register('marked-for-op', TagActionFilter)
 
 
 @resources.register('sqs')
@@ -272,7 +272,7 @@ class UntagQueue(RemoveTag):
                 client.untag_queue(QueueUrl=queue_url, TagKeys=tags)
             except Exception as err:
                 self.log.exception(
-                    'Exception tagging queue %s: %s',
+                    'Exception while removing tags from queue %s: %s',
                     queue['QueueArn'], err)
                 continue
 
