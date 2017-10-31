@@ -231,3 +231,31 @@ class TestSqsAction(BaseTest):
         tags_afer_run = client.list_queue_tags(
             QueueUrl=queue_url).get('Tags', {})
         self.assertTrue("tag-this-queue" in tags_afer_run)
+
+    @functional
+    def test_sqs_remove_tag(self):
+        session_factory = self.replay_flight_data('test_sqs_remove_tag')
+        client = session_factory().client('sqs')
+        name = 'test-sqs'
+        queue_url = client.create_queue(QueueName=name)['QueueUrl']
+        client.tag_queue(
+            QueueUrl=queue_url,
+            Tags={
+                'remove-this-tag': 'tag to be removed'
+            })
+        self.addCleanup(client.delete_queue, QueueUrl=queue_url)
+
+        p = self.load_policy({
+            'name': 'sqs-mark-for-op',
+            'resource': 'sqs',
+            'filters': [{'QueueUrl': queue_url}],
+            'actions': [
+                {'type': 'remove-tag',
+                 'tags': ['remove-this-tag']}]},
+            session_factory=session_factory)
+
+        resources = p.run()
+        self.assertEqual(len(resources), 1)
+        tags_afer_run = client.list_queue_tags(
+            QueueUrl=queue_url).get('Tags', {})
+        self.assertTrue("remove-this-tag" not in tags_afer_run)
