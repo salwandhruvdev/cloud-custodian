@@ -26,8 +26,8 @@ from c7n.actions import BaseAction
 from c7n.utils import type_schema
 from c7n.tags import RemoveTag, Tag, TagActionFilter, TagDelayedAction
 
-filters = FilterRegistry('sqs.filters')
-filters.register('marked-for-op', TagActionFilter)
+# filters = FilterRegistry('sqs.filters')
+# filters.register('marked-for-op', TagActionFilter)
 
 
 @resources.register('sqs')
@@ -167,7 +167,7 @@ class RemovePolicyStatement(RemovePolicyBase):
 
 
 @SQS.action_registry.register('mark-for-op')
-class TagDelayedAction(TagDelayedAction):
+class MarkForOpQueue(TagDelayedAction):
     """Action to specify an action to occur at a later date
 
     :example:
@@ -182,7 +182,7 @@ class TagDelayedAction(TagDelayedAction):
                 actions:
                   - type: mark-for-op
                     tag: custodian_cleanup
-                    msg: "Unused lambda"
+                    msg: "Unused queues"
                     op: delete
                     days: 7
     """
@@ -192,10 +192,13 @@ class TagDelayedAction(TagDelayedAction):
     def process_resource_set(self, queues, tags):
         client = local_session(self.manager.session_factory).client(
             'sqs')
+        tag_dict = {}
+        for t in tags:
+            tag_dict[t['Key']] = t['Value']
         for queue in queues:
             queue_url = queue['QueueUrl']
             try:
-                client.tag_queue(QueueUrl=queue_url, Tags=tags)
+                client.tag_queue(QueueUrl=queue_url, Tags=tag_dict)
             except Exception as err:
                 self.log.exception(
                     'Exception tagging queue %s: %s',
