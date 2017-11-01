@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "82b55d51-ea08-51d2-8ddd-0f25f407ba93", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "82b55d51-ea08-51d2-8ddd-0f25f407ba93", 
+                "content-length": "353", 
+                "server": "Server", 
+                "connection": "keep-alive", 
+                "date": "Wed, 01 Nov 2017 19:09:03 GMT", 
+                "content-type": "text/xml"
+            }
+        }, 
+        "Tags": {
+            "tag-for-op": "Resource does not meet policy: delete@2017/11/01"
+        }
+    }
+}

@@ -259,3 +259,27 @@ class TestSqsAction(BaseTest):
         tags_after_run = client.list_queue_tags(
             QueueUrl=queue_url).get('Tags', {})
         self.assertTrue("remove-this-tag" not in tags_after_run)
+
+    @functional
+    def test_sqs_marked_for_op(self):
+        session_factory = self.record_flight_data('test_sqs_marked_for_op')
+        client = session_factory().client('sqs')
+        name = 'test-sqs'
+        queue_url = client.create_queue(QueueName=name)['QueueUrl']
+        client.tag_queue(
+            QueueUrl=queue_url,
+            Tags={
+                'tag-for-op': 'Resource does not meet policy: delete@2017/11/01'
+            })
+        self.addCleanup(client.delete_queue, QueueUrl=queue_url)
+
+        p = self.load_policy({
+            'name': 'sqs-marked-for-op',
+            'resource': 'sqs',
+            'filters': [
+                {'type': 'marked-for-op', 'tag': 'tag-for-op',
+                 'op': 'delete'}]},
+            session_factory=session_factory)
+
+        resources = p.run()
+        self.assertEqual(len(resources), 1)

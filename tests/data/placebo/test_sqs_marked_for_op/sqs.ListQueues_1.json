@@ -1,0 +1,21 @@
+{
+    "status_code": 200, 
+    "data": {
+        "QueueUrls": [
+            "https://us-east-2.queue.amazonaws.com/644160558196/test-sqs"
+        ], 
+        "ResponseMetadata": {
+            "RetryAttempts": 0, 
+            "HTTPStatusCode": 200, 
+            "RequestId": "7b3ad2fe-b388-5539-a8cf-808aad86d2d8", 
+            "HTTPHeaders": {
+                "x-amzn-requestid": "7b3ad2fe-b388-5539-a8cf-808aad86d2d8", 
+                "content-length": "326", 
+                "server": "Server", 
+                "connection": "keep-alive", 
+                "date": "Wed, 01 Nov 2017 19:09:02 GMT", 
+                "content-type": "text/xml"
+            }
+        }
+    }
+}
