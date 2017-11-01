@@ -26,6 +26,7 @@ from c7n.actions import BaseAction
 from c7n.utils import type_schema
 from c7n.tags import RemoveTag, Tag, TagActionFilter, TagDelayedAction
 
+
 filters = FilterRegistry('sqs.filters')
 filters.register('marked-for-op', TagActionFilter)
 
@@ -50,6 +51,8 @@ class SQS(QueryResourceManager):
             'CreatedTimestamp',
             'ApproximateNumberOfMessages',
         )
+
+    filter_registry = filters
 
     def get_permissions(self):
         perms = super(SQS, self).get_permissions()
@@ -77,7 +80,7 @@ class SQS(QueryResourceManager):
                 tag_list.append({'Key': k, 'Value': v})
 
             queue['QueueUrl'] = r
-            queue['Tags'] = tag_list or []
+            queue['Tags'] = tag_list
             return queue
 
         self.log.debug('retrieving details for %d queues' % len(resources))

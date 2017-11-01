@@ -204,9 +204,9 @@ class TestSqsAction(BaseTest):
 
         resources = p.run()
         self.assertEqual(len(resources), 1)
-        tags_afer_run = client.list_queue_tags(
+        tags_after_run = client.list_queue_tags(
             QueueUrl=queue_url).get('Tags', {})
-        self.assertTrue("tag-for-op" in tags_afer_run)
+        self.assertTrue("tag-for-op" in tags_after_run)
 
     @functional
     def test_sqs_tag(self):
@@ -228,9 +228,9 @@ class TestSqsAction(BaseTest):
 
         resources = p.run()
         self.assertEqual(len(resources), 1)
-        tags_afer_run = client.list_queue_tags(
+        tags_after_run = client.list_queue_tags(
             QueueUrl=queue_url).get('Tags', {})
-        self.assertTrue("tag-this-queue" in tags_afer_run)
+        self.assertTrue("tag-this-queue" in tags_after_run)
 
     @functional
     def test_sqs_remove_tag(self):
@@ -256,6 +256,6 @@ class TestSqsAction(BaseTest):
 
         resources = p.run()
         self.assertEqual(len(resources), 1)
-        tags_afer_run = client.list_queue_tags(
+        tags_after_run = client.list_queue_tags(
             QueueUrl=queue_url).get('Tags', {})
-        self.assertTrue("remove-this-tag" not in tags_afer_run)
+        self.assertTrue("remove-this-tag" not in tags_after_run)
