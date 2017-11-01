@@ -262,7 +262,7 @@ class TestSqsAction(BaseTest):
 
     @functional
     def test_sqs_marked_for_op(self):
-        session_factory = self.record_flight_data('test_sqs_marked_for_op')
+        session_factory = self.replay_flight_data('test_sqs_marked_for_op')
         client = session_factory().client('sqs')
         name = 'test-sqs'
         queue_url = client.create_queue(QueueName=name)['QueueUrl']
