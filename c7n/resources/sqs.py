@@ -208,6 +208,7 @@ class MarkForOpQueue(TagDelayedAction):
                     queue['QueueArn'], err)
                 continue
 
+
 @SQS.action_registry.register('tag')
 class TagQueue(Tag):
     """Action to create tag(s) on a queue
