@@ -526,7 +526,8 @@ class NotEncryptedFilter(Filter, LaunchConfigFilterBase):
             try:
                 result = ec2.describe_snapshots(SnapshotIds=snap_ids)
             except ClientError as e:
-                if e.response['Error']['Code'] in ['InvalidSnapshot.NotFound', 'InvalidSnapshotID.Malformed']:
+                if e.response['Error']['Code'] in (
+                        'InvalidSnapshot.NotFound', 'InvalidSnapshotID.Malformed'):
                     if e.response['Error']['Code'] == 'InvalidSnapshotID.Malformed':
                         msg = e.response['Error']['Message']
                         e_snap_id = msg[msg.find('"') + 1:msg.rfind('"')]
