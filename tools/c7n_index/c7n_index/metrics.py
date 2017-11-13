@@ -48,7 +48,7 @@ log = logging.getLogger('c7n.metrics')
 CONFIG_SCHEMA = {
     'type': 'object',
     'additionalProperties': True,
-    'required': ['indexer', 'accounts'],
+    'required': ['indexer', 'sqs'],
     'properties': {
         'indexer': {
             'oneOf': [
@@ -104,7 +104,15 @@ CONFIG_SCHEMA = {
                     'regions': {'type': 'array', 'items': {'type': 'string'}}
                 }
             }
-        }
+        },
+        'sqs': {
+                'type': 'object',
+                'required': ['queue_url'],
+                'properties': {
+                    'type': {'enum': ['sqs']},
+                    'queue_url': {'type': 'string'}
+                }
+         }
     }
 }
 
