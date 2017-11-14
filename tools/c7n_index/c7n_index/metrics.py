@@ -17,6 +17,9 @@ import logging
 import math
 import random
 import time
+import base64
+import json
+import zlib
 
 import boto3
 import click
@@ -29,11 +32,12 @@ from influxdb import InfluxDBClient
 import yaml
 
 from c7n import schema
+from c7n import sqsexec
 from c7n.credentials import assumed_session, SessionFactory
 from c7n.registry import PluginRegistry
 from c7n.reports import csvout as s3_resource_parser
 from c7n.resources import load_resources
-from c7n.utils import chunks, dumps, get_retry, local_session
+from c7n.utils import chunks, dumps, get_retry, local_session, loads
 
 # from c7n.executor import MainThreadExecutor
 # ThreadPoolExecutor = MainThreadExecutor
@@ -110,7 +114,8 @@ CONFIG_SCHEMA = {
                 'required': ['queue_url'],
                 'properties': {
                     'type': {'enum': ['sqs']},
-                    'queue_url': {'type': 'string'}
+                    'queue_url': {'type': 'string'},
+                    'region': {'type': 'string'}
                 }
          }
     }
@@ -214,6 +219,32 @@ class InfluxIndexer(Indexer):
                     'metric': p['MetricName'],
                     'namespace': p['Namespace']}})
         self.client.write_points(measurements)
+
+
+class SQSConsumer(object):
+
+    def __init__(self, config):
+        self.config = config
+        self.receive_queue = config['sqs']['queue_url']
+        self.region = config['sqs']['region']
+        self.session = boto3.Session(region_name=self.region)
+
+    def run(self):
+        client = self.session.client('sqs')
+        msg_iterator = sqsexec.MessageIterator(client, self.receive_queue)
+        indexer = get_indexer(self.config)
+
+        # iterate over messages using __next__ in MessageIterator
+        # and process message accordingly
+        for msg in msg_iterator:
+            msg = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
+            # Reformat tags for ease of index/search
+            # Tags are stored in the following format:
+            # Tags: [ {'key': 'mykey', 'val': 'myval'}, {'key': 'mykey2', 'val': 'myval2'} ]
+            # and this makes searching for tags difficult. We will convert them to:
+            # Tags: ['mykey': 'myval', 'mykey2': 'myval2']
+            msg['Tags'] = {t['Key']: t['Value'] for t in msg.get('Tags', [])}
+            indexer.index(msg)
 
 
 def index_metric_set(indexer, account, region, metric_set, start, end, period):
@@ -486,7 +517,7 @@ def index_metrics(
 
 @cli.command(name='index-resources')
 @click.option('-c', '--config', required=True, help="Config file")
-@click.option('-p', '--policies', required=True, help="Policy file")
+# @click.option('-p', '--policies', required=True, help="Policy file")
 @click.option('--date', required=False, help="Start date")
 @click.option('--concurrency', default=5)
 @click.option('-a', '--accounts', multiple=True)
@@ -504,14 +535,14 @@ def index_resources(
     logging.getLogger('c7n.worker').setLevel(logging.INFO)
 
     # validating the config and policy files.
-    with open(config) as fh:
-        config = yaml.safe_load(fh.read())
-    jsonschema.validate(config, CONFIG_SCHEMA)
-
-    with open(policies) as fh:
-        policies = yaml.safe_load(fh.read())
-    load_resources()
-    schema.validate(policies)
+    # with open(config) as fh:
+    #     config = yaml.safe_load(fh.read())
+    # jsonschema.validate(config, CONFIG_SCHEMA)
+    #
+    # with open(policies) as fh:
+    #     policies = yaml.safe_load(fh.read())
+    # load_resources()
+    # schema.validate(policies)
 
     date = valid_date(date, delta=1)
 
@@ -550,6 +581,23 @@ def index_resources(
                 continue
             log.info("complete account:{} region:{} policy:{}".format(
                 account['name'], region, policy['name']))
+
+
+@cli.command(name='sqs-indexer')
+@click.option('-c', '--config', required=True, help="Config file")
+def sqs_indexer(config):
+    """Receive messages from SQS -> push to ES"""
+
+    # validating config.
+    with open(config) as fh:
+        config = yaml.safe_load(fh.read())
+    jsonschema.validate(config, CONFIG_SCHEMA)
+
+    try:
+        consumer_obj = SQSConsumer(config)
+        consumer_obj.run()
+    except Exception as e:
+        print("Exception fetching queues: {}".format(e))
 
 
 if __name__ == '__main__':
