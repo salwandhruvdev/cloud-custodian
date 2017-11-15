@@ -141,9 +141,9 @@ def get_indexer(config, **kwargs):
 @indexers.register('es')
 class ElasticSearchIndexer(Indexer):
 
-    def __init__(self, config, **kwargs):
+    def __init__(self, config):
         self.config = config
-        self.es_type = kwargs.get('type', 'policy-metric')
+        # self.es_type = kwargs.get('type', 'policy-metric')
 
         host = [config['indexer'].get('host', 'localhost')]
         kwargs = {}
@@ -161,15 +161,13 @@ class ElasticSearchIndexer(Indexer):
             **kwargs
         )
 
-    def index(self, points):
-        for p in points:
-            p['_index'] = self.config['indexer']['idx_name']
-            p['_type'] = self.es_type
-
-        results = helpers.streaming_bulk(self.client, points)
-        for status, r in results:
-            if not status:
-                log.debug("index err result %s", r)
+    def index(self, queue_msg):
+        try:
+            results = self.client.index(
+                index=queue_msg['policy']['resource'], doc_type=queue_msg['policy']['name'],
+                body=queue_msg)
+        except Exception as e:
+            print("Error while Indexing: {}".format(e))
 
 
 @indexers.register('s3')
@@ -239,10 +237,6 @@ class SQSConsumer(object):
         for msg in msg_iterator:
             msg = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
             # Reformat tags for ease of index/search
-            # Tags are stored in the following format:
-            # Tags: [ {'key': 'mykey', 'val': 'myval'}, {'key': 'mykey2', 'val': 'myval2'} ]
-            # and this makes searching for tags difficult. We will convert them to:
-            # Tags: ['mykey': 'myval', 'mykey2': 'myval2']
             msg['Tags'] = {t['Key']: t['Value'] for t in msg.get('Tags', [])}
             indexer.index(msg)
 
