@@ -123,6 +123,113 @@ class BucketMetrics(BaseTest):
 
 class BucketInventory(BaseTest):
 
+    def test_s3_set_encrypted_inventory_sses3(self):
+        bname = 'custodian-inventory-test'
+        self.patch(s3.S3, 'executor_factory', MainThreadExecutor)
+        self.patch(s3, 'S3_AUGMENT_TABLE', [])
+
+        session_factory = self.replay_flight_data('test_s3_set_encrypted_inventory_sses3')
+
+        client = session_factory().client('s3')
+        client.create_bucket(Bucket=bname)
+        self.addCleanup(client.delete_bucket, Bucket=bname)
+
+        p = self.load_policy({
+            'name': 's3-inv',
+            'resource': 's3',
+            'filters': [
+                {'Name': bname}
+            ],
+            'actions': [
+                {
+                    'type': 'set-inventory',
+                    'destination': 'inv-dest',
+                    'name': 'inv-name',
+                    'state': 'enabled',
+                    'encryption': 'SSES3',
+                    'fields': ['Size', 'EncryptionStatus']
+                }
+            ]
+        }, session_factory=session_factory)
+        resources = p.run()
+        self.assertEqual(len(resources), 1)
+
+        invs = client.list_bucket_inventory_configurations(
+            Bucket=bname).get('InventoryConfigurationList')
+        self.assertTrue(invs)
+        self.assertTrue('SSES3' in invs[0]['Destination']['S3BucketDestination']['Encryption'])
+        self.assertTrue('EncryptionStatus' in invs[0]['OptionalFields'])
+
+    def test_s3_set_encrypted_inventory_ssekms(self):
+        bname = 'custodian-inventory-test'
+        self.patch(s3.S3, 'executor_factory', MainThreadExecutor)
+        self.patch(s3, 'S3_AUGMENT_TABLE', [])
+
+        session_factory = self.replay_flight_data('test_s3_set_encrypted_inventory_ssekms')
+
+        client = session_factory().client('s3')
+        client.create_bucket(Bucket=bname)
+        self.addCleanup(client.delete_bucket, Bucket=bname)
+
+        p = self.load_policy({
+            'name': 's3-inv',
+            'resource': 's3',
+            'filters': [
+                {'Name': bname}
+            ],
+            'actions': [
+                {
+                    'type': 'set-inventory',
+                    'destination': 'inv-dest',
+                    'name': 'inv-name',
+                    'state': 'enabled',
+                    'encryption': 'SSEKMS',
+                    'key_id': 'arn:valid:kms',
+                    'fields': ['Size', 'EncryptionStatus']
+                }
+            ]
+        }, session_factory=session_factory)
+        resources = p.run()
+        self.assertEqual(len(resources), 1)
+
+        invs = client.list_bucket_inventory_configurations(
+            Bucket=bname).get('InventoryConfigurationList')
+        self.assertTrue(invs)
+        self.assertTrue('SSEKMS' in invs[0]['Destination']['S3BucketDestination']['Encryption'])
+        self.assertTrue('EncryptionStatus' in invs[0]['OptionalFields'])
+
+    def test_s3_delete_inventory_inventory_not_set(self):
+        bname = 'delete_inventory'
+        self.patch(s3.S3, 'executor_factory', MainThreadExecutor)
+        self.patch(s3, 'S3_AUGMENT_TABLE', [])
+
+        session_factory = self.replay_flight_data('test_s3_delete_inventory_inventory_not_set')
+
+        client = session_factory().client('s3')
+        client.create_bucket(Bucket=bname)
+        self.addCleanup(client.delete_bucket, Bucket=bname)
+
+        p = self.load_policy({
+            'name': 's3-inv',
+            'resource': 's3',
+            'filters': [
+                {'Name': bname}
+            ],
+            'actions': [
+                {
+                    'type': 'set-inventory',
+                    'destination': 'inv-dest',
+                    'name': 'inv-name',
+                    'state': 'absent',
+                }
+            ]
+        }, session_factory=session_factory)
+
+        resources = p.run()
+        self.assertEqual(len(resources), 1)
+        inventoryConfigList = client.list_bucket_inventory_configurations(Bucket=bname).get('InventoryConfigurationList')
+        self.assertFalse(inventoryConfigList)
+
     @functional
     def test_inventory(self):
         bname = 'custodian-test-data'
@@ -1851,6 +1958,65 @@ class S3Test(BaseTest):
         resources = p.run()
         self.assertEqual(len(resources), 0)
 
+    def test_delete_bucket_notification(self):
+        self.patch(s3, 'S3_AUGMENT_TABLE', [(
+            'get_bucket_notification_configuration', 'Notification', None,
+            None)])
+        self.patch(s3.S3, 'executor_factory', MainThreadExecutor)
+        session_factory = self.replay_flight_data(
+            'test_s3_delete_bucket_notification')
+        bname = 'custodian-delete-bucket-notification-test'
+        config_id = 'c7n-notify-1'
+        self.maxDiff = None
+        session = session_factory(region='us-east-1')
+        client = session.client('s3')
+        client.create_bucket(Bucket=bname)
+        self.addCleanup(destroyBucket, client, bname)
+
+        p = self.load_policy({
+            'name': 's3-delete-bucket-notification',
+            'resource': 's3',
+            'filters': [
+                {'Name': bname},
+                {'type': 'bucket-notification',
+                 'kind': 'sns',
+                 'key': 'Id',
+                 'value': config_id,
+                 'op': 'eq'}
+            ],
+            'actions': [{'type': 'delete-bucket-notification',
+                         'statement_ids': 'matched'}]
+            }, session_factory=session_factory)
+
+        topic_arn = session.client('sns').create_topic(Name='bucket-notification-test')['TopicArn']
+        self.addCleanup(session.client('sns').delete_topic, TopicArn=topic_arn)
+        topic_policy = {
+            'Statement': [{
+                'Action': 'SNS:Publish',
+                'Effect': 'Allow',
+                'Resource': topic_arn,
+                'Principal': {'Service': 's3.amazonaws.com'}}]}
+        session.client('sns').set_topic_attributes(
+            TopicArn=topic_arn,
+            AttributeName='Policy',
+            AttributeValue=json.dumps(topic_policy))
+        client.put_bucket_notification_configuration(
+            Bucket=bname,
+            NotificationConfiguration={
+                'TopicConfigurations': [
+                    {'TopicArn': topic_arn, 'Events': ['s3:ObjectCreated:*'], 'Id': config_id},
+                     {'TopicArn': topic_arn, 'Events': ['s3:ObjectRemoved:*'], 'Id': 'another1'}
+                ]
+            })
+
+        resources = p.run()
+        self.assertEqual(len(resources), 1)
+        #time.sleep(10)
+        topic_notifications = client.get_bucket_notification_configuration(
+            Bucket=bname).get('TopicConfigurations', [])
+        us = [t for t in topic_notifications if t.get('TopicArn') == topic_arn]
+        self.assertEqual(len(us), 1)
+
 
 class S3LifecycleTest(BaseTest):
 
@@ -1943,7 +2109,7 @@ class S3LifecycleTest(BaseTest):
         #
         policy = get_policy(ID=lifecycle_id1, Status='absent')
         run_policy(policy)
-        
+
         lifecycle = client.get_bucket_lifecycle_configuration(Bucket=bname)
         self.assertEqual(len(lifecycle['Rules']), 1)
         self.assertEqual(lifecycle['Rules'][0]['ID'], lifecycle_id2)
