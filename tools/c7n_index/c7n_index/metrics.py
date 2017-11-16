@@ -166,8 +166,9 @@ class ElasticSearchIndexer(Indexer):
             results = self.client.index(
                 index=queue_msg['policy']['resource'], doc_type=queue_msg['policy']['name'],
                 body=queue_msg)
+            print results
         except Exception as e:
-            print("Error while Indexing: {}".format(e))
+            log.error("Error while Indexing: {}".format(e))
 
 
 @indexers.register('s3')
@@ -233,12 +234,14 @@ class SQSConsumer(object):
         indexer = get_indexer(self.config)
 
         # iterate over messages using __next__ in MessageIterator
-        # and process message accordingly
+        # and index to ES
         for msg in msg_iterator:
-            msg = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
+            msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
+            print(msg_json)
             # Reformat tags for ease of index/search
-            msg['Tags'] = {t['Key']: t['Value'] for t in msg.get('Tags', [])}
-            indexer.index(msg)
+            msg_json['Tags'] = {t['Key']: t['Value'] for t in msg_json.get('Tags', [])}
+            indexer.index(msg_json)
+            msg_iterator.ack(msg)
 
 
 def index_metric_set(indexer, account, region, metric_set, start, end, period):
@@ -591,7 +594,7 @@ def sqs_indexer(config):
         consumer_obj = SQSConsumer(config)
         consumer_obj.run()
     except Exception as e:
-        print("Exception fetching queues: {}".format(e))
+        log.error("Exception fetching queues: {}".format(e))
 
 
 if __name__ == '__main__':
