@@ -166,7 +166,6 @@ class ElasticSearchIndexer(Indexer):
             results = self.client.index(
                 index=queue_msg['policy']['resource'], doc_type=queue_msg['policy']['name'],
                 body=queue_msg)
-            print results
         except Exception as e:
             log.error("Error while Indexing: {}".format(e))
 
@@ -237,11 +236,15 @@ class SQSConsumer(object):
         # and index to ES
         for msg in msg_iterator:
             msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
-            print(msg_json)
+
             # Reformat tags for ease of index/search
-            msg_json['Tags'] = {t['Key']: t['Value'] for t in msg_json.get('Tags', [])}
+            for resource in msg_json['resources']:
+                if 'Tags' in resource and len(resource['Tags']) != 0:
+                    resource['Tags'] = {
+                        t['Key']: t['Value'] for t in resource['Tags']}
+
             indexer.index(msg_json)
-            msg_iterator.ack(msg)
+            # msg_iterator.ack(msg)
 
 
 def index_metric_set(indexer, account, region, metric_set, start, end, period):
@@ -594,7 +597,7 @@ def sqs_indexer(config):
         consumer_obj = SQSConsumer(config)
         consumer_obj.run()
     except Exception as e:
-        log.error("Exception fetching queues: {}".format(e))
+        print("Exception fetching queues: {}".format(e))
 
 
 if __name__ == '__main__':
