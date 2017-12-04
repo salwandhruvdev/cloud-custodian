@@ -5,6 +5,6 @@ indexer:
   idx_name: test
 
 sqs:
-  queue_url: "https://sqs.us-east-1.amazonaws.com/111222333444/test-wyp927-ES"
+  queue_url: "https://sqs.us-east-1.amazonaws.com/111222333444/test-queue"
   region: "us-east-1"
 
