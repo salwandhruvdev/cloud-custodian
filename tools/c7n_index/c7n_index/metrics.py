@@ -51,14 +51,15 @@ log = logging.getLogger('c7n.metrics')
 
 CONFIG_SCHEMA = {
     'type': 'object',
-    'additionalProperties': True,
+    'additionalProperties': False,
     'required': ['indexer', 'sqs'],
     'properties': {
         'indexer': {
             'oneOf': [
                 {
                     'type': 'object',
-                    'required': ['host', 'port', 'idx_name'],
+                    'additionalProperties': False,
+                    'required': ['host', 'port'],
                     'properties': {
                         'type': {'enum': ['es']},
                         'host': {'type': 'string'},
@@ -71,6 +72,7 @@ CONFIG_SCHEMA = {
                 },
                 {
                     'type': 'object',
+                    'additionalProperties': False,
                     'required': ['host', 'db', 'user', 'password'],
                     'properties': {
                         'type': {'enum': ['influx']},
@@ -82,6 +84,7 @@ CONFIG_SCHEMA = {
                 },
                 {
                     'type': 'object',
+                    'additionalProperties': False,
                     'required': ['template', 'Bucket'],
                     'properties': {
                         'type': {'enum': ['s3']},
@@ -111,6 +114,7 @@ CONFIG_SCHEMA = {
         },
         'sqs': {
                 'type': 'object',
+                'additionalProperties': False,
                 'required': ['queue_url'],
                 'properties': {
                     'type': {'enum': ['sqs']},
@@ -144,8 +148,7 @@ class ElasticSearchIndexer(Indexer):
     def __init__(self, config):
         self.config = config
         # self.es_type = kwargs.get('type', 'policy-metric')
-
-        host = [config['indexer'].get('host', 'localhost')]
+        host = [config['indexer'].get('host')]
         kwargs = {}
         kwargs['connection_class'] = RequestsHttpConnection
 
@@ -154,7 +157,7 @@ class ElasticSearchIndexer(Indexer):
         if user and password:
             kwargs['http_auth'] = (user, password)
 
-        kwargs['port'] = config['indexer'].get('port', 9200)
+        kwargs['port'] = config['indexer'].get('port')
 
         self.client = Elasticsearch(
             host,
@@ -163,9 +166,10 @@ class ElasticSearchIndexer(Indexer):
 
     def index(self, queue_msg):
         try:
-            results = self.client.index(
+            res = self.client.index(
                 index=queue_msg['policy']['resource'], doc_type=queue_msg['policy']['name'],
                 body=queue_msg)
+            return res
         except Exception as e:
             log.error("Error while Indexing: {}".format(e))
 
@@ -219,7 +223,7 @@ class InfluxIndexer(Indexer):
         self.client.write_points(measurements)
 
 
-class SQSConsumer(object):
+class SqsIndexer(object):
 
     def __init__(self, config):
         self.config = config
@@ -232,9 +236,9 @@ class SQSConsumer(object):
         msg_iterator = sqsexec.MessageIterator(client, self.receive_queue)
         indexer = get_indexer(self.config)
 
-        # iterate over messages using __next__ in MessageIterator
-        # and index to ES
+        # iterate messages using __next__ in MessageIterator
         for msg in msg_iterator:
+            print(msg)
             msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
 
             # Reformat tags for ease of index/search
@@ -242,9 +246,8 @@ class SQSConsumer(object):
                 if 'Tags' in resource and len(resource['Tags']) != 0:
                     resource['Tags'] = {
                         t['Key']: t['Value'] for t in resource['Tags']}
-
             indexer.index(msg_json)
-            # msg_iterator.ack(msg)
+            msg_iterator.ack(msg)
 
 
 def index_metric_set(indexer, account, region, metric_set, start, end, period):
@@ -535,14 +538,14 @@ def index_resources(
     logging.getLogger('c7n.worker').setLevel(logging.INFO)
 
     # validating the config and policy files.
-    # with open(config) as fh:
-    #     config = yaml.safe_load(fh.read())
-    # jsonschema.validate(config, CONFIG_SCHEMA)
-    #
-    # with open(policies) as fh:
-    #     policies = yaml.safe_load(fh.read())
-    # load_resources()
-    # schema.validate(policies)
+    with open(config) as fh:
+        config = yaml.safe_load(fh.read())
+    jsonschema.validate(config, CONFIG_SCHEMA)
+
+    with open(policies) as fh:
+        policies = yaml.safe_load(fh.read())
+    load_resources()
+    schema.validate(policies)
 
     date = valid_date(date, delta=1)
 
@@ -594,11 +597,10 @@ def sqs_indexer(config):
     jsonschema.validate(config, CONFIG_SCHEMA)
 
     try:
-        consumer_obj = SQSConsumer(config)
+        consumer_obj = SqsIndexer(config)
         consumer_obj.run()
     except Exception as e:
         print("Exception fetching queues: {}".format(e))
-
 
 if __name__ == '__main__':
     try:
