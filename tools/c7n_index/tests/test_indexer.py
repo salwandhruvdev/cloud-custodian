@@ -15,10 +15,12 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-from elasticsearch import Elasticsearch
 import yaml
 import unittest
+from elasticmock import elasticmock
 from c7n_index import metrics
+from elasticsearch import Elasticsearch
+from elasticmock.fake_elasticsearch import FakeElasticsearch
 
 RESOURCE = {
     "Website": None,
@@ -97,6 +99,7 @@ SQS_MESSAGE = {
 
 class ElasticsearchTest(unittest.TestCase):
 
+    @elasticmock
     def setUp(self):
         file = '{}/sample_config.yml'.format(
             os.path.dirname(os.path.realpath(__file__)))
@@ -113,12 +116,13 @@ class ElasticsearchTest(unittest.TestCase):
         self.assertIsNotNone(self.config['indexer']['port'])
         self.assertEqual(self.config['indexer']['type'], 'es')
 
+    @elasticmock
     def test_client_connection(self):
-        self.assertIsInstance(self.elasticsearch_obj.client, Elasticsearch)
+        self.assertIsInstance(self.elasticsearch_obj.client, FakeElasticsearch)
 
+    @elasticmock
     def test_send_elasticsearch(self):
         res = self.elasticsearch_obj.index(SQS_MESSAGE)
-        print(res)
         self.assertIsNotNone(res)
-        # self.assertEqual(res.get('_index'),a 'custodian_index')
-        # self.assertTrue(res.get('created'))
+        self.assertEqual(res.get('_index'), 's3')
+        self.assertTrue(res.get('created'))
