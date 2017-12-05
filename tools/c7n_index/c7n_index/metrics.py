@@ -25,7 +25,7 @@ import boto3
 import click
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dateutil.parser import parse as parse_date
-from elasticsearch import Elasticsearch, helpers, RequestsHttpConnection
+import elasticsearch
 import jsonschema
 from influxdb import InfluxDBClient
 
@@ -150,7 +150,7 @@ class ElasticSearchIndexer(Indexer):
         # self.es_type = kwargs.get('type', 'policy-metric')
         host = [config['indexer'].get('host')]
         kwargs = {}
-        kwargs['connection_class'] = RequestsHttpConnection
+        kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
 
         user = config['indexer'].get('user', False)
         password = config['indexer'].get('password', False)
@@ -159,17 +159,29 @@ class ElasticSearchIndexer(Indexer):
 
         kwargs['port'] = config['indexer'].get('port')
 
-        self.client = Elasticsearch(
+        self.client = elasticsearch.Elasticsearch(
             host,
             **kwargs
         )
 
-    def index(self, queue_msg):
+    def index(self, data):
+        # for backward compatibility with indexing docs from s3
+        # using an if statement to determine the caller
         try:
-            res = self.client.index(
-                index=queue_msg['policy']['resource'], doc_type=queue_msg['policy']['name'],
-                body=queue_msg)
-            return res
+            if "sqs" in self.config:
+                res = self.client.index(
+                    index=data['policy']['resource'], doc_type=data['policy']['name'],
+                    body=data)
+                return res
+            else:
+                for p in data:
+                    p['_index'] = self.config['indexer']['idx_name']
+                    p['_type'] = self.es_type
+
+                results = elasticsearch.helpers.streaming_bulk(self.client, data)
+                for status, r in results:
+                    if not status:
+                        log.debug("index err result %s", r)
         except Exception as e:
             log.error("Error while Indexing: {}".format(e))
 
@@ -238,7 +250,6 @@ class SqsIndexer(object):
 
         # iterate messages using __next__ in MessageIterator
         for msg in msg_iterator:
-            print(msg)
             msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
 
             # Reformat tags for ease of index/search
@@ -595,7 +606,8 @@ def sqs_indexer(config):
     with open(config) as fh:
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
-
+    print(config)
+    print(type(config))
     try:
         consumer_obj = SqsIndexer(config)
         consumer_obj.run()
