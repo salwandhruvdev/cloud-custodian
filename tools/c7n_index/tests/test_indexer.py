@@ -18,7 +18,7 @@ import os
 import yaml
 import unittest
 from elasticmock import elasticmock
-from c7n_index import metrics
+from c7n_index.metrics import get_indexer
 from elasticmock.fake_elasticsearch import FakeElasticsearch
 
 RESOURCE = {
@@ -105,7 +105,7 @@ class ElasticsearchTest(unittest.TestCase):
         with open(file) as fh:
             config = yaml.safe_load(fh.read())
         self.config = config
-        self.elasticsearch_obj = metrics.get_indexer(self.config)
+        self.elasticsearch_obj = get_indexer(self.config)
 
     def test_valid_config(self):
         self.assertIsNotNone(self.config['sqs']['queue_url'])

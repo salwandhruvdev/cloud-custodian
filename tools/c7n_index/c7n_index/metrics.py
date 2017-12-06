@@ -145,10 +145,10 @@ def get_indexer(config, **kwargs):
 @indexers.register('es')
 class ElasticSearchIndexer(Indexer):
 
-    def __init__(self, config):
+    def __init__(self, config, **kwargs):
         self.config = config
-        # self.es_type = kwargs.get('type', 'policy-metric')
-        host = [config['indexer'].get('host')]
+        self.es_type = kwargs.get('type', 'policy-metric')
+        host = [config['indexer'].get('host', 'localhost')]
         kwargs = {}
         kwargs['connection_class'] = elasticsearch.RequestsHttpConnection
 
@@ -157,7 +157,7 @@ class ElasticSearchIndexer(Indexer):
         if user and password:
             kwargs['http_auth'] = (user, password)
 
-        kwargs['port'] = config['indexer'].get('port')
+        kwargs['port'] = config['indexer'].get('port', 9200)
 
         self.client = elasticsearch.Elasticsearch(
             host,
@@ -175,15 +175,15 @@ class ElasticSearchIndexer(Indexer):
                 log.info("results: {}, index_created:{}, doc_type: {}".format(
                     res, data['policy']['resource'], data['policy']['name']))
                 return res
-            else:
-                for p in data:
-                    p['_index'] = self.config['indexer']['idx_name']
-                    p['_type'] = self.es_type
 
-                results = elasticsearch.helpers.streaming_bulk(self.client, data)
-                for status, r in results:
-                    if not status:
-                        log.debug("index err result %s", r)
+            for p in data:
+                p['_index'] = self.config['indexer']['idx_name']
+                p['_type'] = self.es_type
+
+            results = elasticsearch.helpers.streaming_bulk(self.client, data)
+            for status, r in results:
+                if not status:
+                    log.debug("index err result %s", r)
         except Exception as e:
             log.debug("Error while Indexing: {}".format(e))
 
