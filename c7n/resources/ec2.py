@@ -302,6 +302,56 @@ class AttachedVolume(ValueFilter):
         return self.operator(map(self.match, volumes))
 
 
+@filters.register('termination-protected')
+class DisableApiTermination(Filter):
+    """EC2 instances with ``disableApiTermination`` attribute set
+
+    Filters EC2 instances with ``disableApiTermination`` attribute set to true.
+
+    :Example:
+
+    .. code-block:: yaml
+
+        policies:
+          - name: termination-protection-enabled
+            resource: ec2
+            filters:
+              - type: termination-protected
+
+    :Example:
+
+    .. code-block:: yaml
+
+        policies:
+          - name: termination-protection-NOT-enabled
+            resource: ec2
+            filters:
+              - not:
+                - type: termination-protected
+    """
+
+    schema = type_schema('termination-protected')
+    permissions = ('ec2:DescribeInstanceAttribute',)
+
+    def get_permissions(self):
+        perms = list(self.permissions)
+        perms.extend(self.manager.get_permissions())
+        return perms
+
+    def is_termination_protection_enabled(self, inst):
+        res_id = self.manager.get_model().id
+        client = utils.local_session(self.manager.session_factory).client('ec2')
+        attr_val = self.manager.retry(
+            client.describe_instance_attribute,
+            Attribute='disableApiTermination',
+            InstanceId=inst[res_id]
+        )
+        return attr_val['DisableApiTermination']['Value']
+
+    def __call__(self, i):
+        return self.is_termination_protection_enabled(i)
+
+
 class InstanceImageBase(object):
 
     def prefetch_instance_images(self, instances):
@@ -398,20 +448,47 @@ class InstanceOffHour(OffHour, StateTransitionFilter):
     """Custodian OffHour filter
 
     Filters running EC2 instances with the intent to stop at a given hour of
-    the day.
+    the day. A list of days to excluded can be included as a list of strings
+    with the format YYYY-MM-DD. Alternatively, the list (using the same syntax)
+    can be taken from a specified url.
 
     :Example:
 
     .. code-block: yaml
 
         policies:
-          - name: onhour-evening-stop
+          - name: offhour-evening-stop
             resource: ec2
             filters:
               - type: offhour
                 tag: custodian_downtime
                 default_tz: et
                 offhour: 20
+            actions:
+              - stop
+
+          - name: offhour-evening-stop-skip-holidays
+            resource: ec2
+            filters:
+              - type: offhour
+                tag: custodian_downtime
+                default_tz: et
+                offhour: 20
+                skip-days: ['2017-12-25']
+            actions:
+              - stop
+
+          - name: offhour-evening-stop-skip-holidays-from
+            resource: ec2
+            filters:
+              - type: offhour
+                tag: custodian_downtime
+                default_tz: et
+                offhour: 20
+                skip-days-from:
+                  expr: 0
+                  format: csv
+                  url: 's3://location/holidays.csv'
             actions:
               - stop
     """
@@ -428,7 +505,9 @@ class InstanceOnHour(OnHour, StateTransitionFilter):
     """Custodian OnHour filter
 
     Filters stopped EC2 instances with the intent to start at a given hour of
-    the day.
+    the day. A list of days to excluded can be included as a list of strings
+    with the format YYYY-MM-DD. Alternatively, the list (using the same syntax)
+    can be taken from a specified url.
 
     :Example:
 
@@ -442,6 +521,31 @@ class InstanceOnHour(OnHour, StateTransitionFilter):
                 tag: custodian_downtime
                 default_tz: et
                 onhour: 6
+            actions:
+              - start
+
+          - name: onhour-morning-start-skip-holidays
+            resource: ec2
+            filters:
+              - type: onhour
+                tag: custodian_downtime
+                default_tz: et
+                onhour: 6
+                skip-days: ['2017-12-25']
+            actions:
+              - start
+
+          - name: onhour-morning-start-skip-holidays-from
+            resource: ec2
+            filters:
+              - type: onhour
+                tag: custodian_downtime
+                default_tz: et
+                onhour: 6
+                skip-days-from:
+                  expr: 0
+                  format: csv
+                  url: 's3://location/holidays.csv'
             actions:
               - start
     """
@@ -836,6 +940,70 @@ class Stop(BaseAction, StateTransitionFilter):
                         return
                     continue
                 raise
+
+
+@actions.register('reboot')
+class Reboot(BaseAction, StateTransitionFilter):
+    """reboots a previously running EC2 instance.
+
+    :Example:
+
+    .. code-block: yaml
+
+        policies:
+          - name: ec2-reboot-instances
+            resource: ec2
+            query:
+              - instance-state-name: running
+            actions:
+              - reboot
+
+    http://docs.aws.amazon.com/cli/latest/reference/ec2/reboot-instances.html
+    """
+
+    valid_origin_states = ('running',)
+    schema = type_schema('reboot')
+    permissions = ('ec2:RebootInstances',)
+    batch_size = 10
+    exception = None
+
+    def _filter_ec2_with_volumes(self, instances):
+        return [i for i in instances if len(i['BlockDeviceMappings']) > 0]
+
+    def process(self, instances):
+        instances = self._filter_ec2_with_volumes(
+            self.filter_instance_state(instances))
+        if not len(instances):
+            return
+
+        client = utils.local_session(self.manager.session_factory).client('ec2')
+        failures = {}
+
+        for batch in utils.chunks(instances, self.batch_size):
+            fails = self.process_instance_set(client, batch)
+            if fails:
+                failures = [i['InstanceId'] for i in batch]
+
+        if failures:
+            fail_count = sum(map(len, failures.values()))
+            msg = "Could not reboot %d of %d instances %s" % (
+                fail_count, len(instances),
+                utils.dumps(failures))
+            self.log.warning(msg)
+            raise RuntimeError(msg)
+
+    def process_instance_set(self, client, instances):
+        # Setup retry with insufficient capacity as well
+        retryable = ('InsufficientInstanceCapacity', 'RequestLimitExceeded',
+                     'Client.RequestLimitExceeded'),
+        retry = utils.get_retry(retryable, max_attempts=5)
+        instance_ids = [i['InstanceId'] for i in instances]
+        try:
+            retry(client.reboot_instances, InstanceIds=instance_ids)
+        except ClientError as e:
+            if e.response['Error']['Code'] in retryable:
+                return True
+            raise
 
 
 @actions.register('terminate')
