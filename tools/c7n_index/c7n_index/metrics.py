@@ -172,6 +172,8 @@ class ElasticSearchIndexer(Indexer):
                 res = self.client.index(
                     index=data['policy']['resource'], doc_type=data['policy']['name'],
                     body=data)
+                log.info("results: {}, index_created:{}, doc_type: {}".format(
+                    res, data['policy']['resource'], data['policy']['name']))
                 return res
             else:
                 for p in data:
@@ -183,7 +185,7 @@ class ElasticSearchIndexer(Indexer):
                     if not status:
                         log.debug("index err result %s", r)
         except Exception as e:
-            log.error("Error while Indexing: {}".format(e))
+            log.debug("Error while Indexing: {}".format(e))
 
 
 @indexers.register('s3')
@@ -599,20 +601,22 @@ def index_resources(
 
 @cli.command(name='sqs-indexer')
 @click.option('-c', '--config', required=True, help="Config file")
-def sqs_indexer(config):
+@click.option('--verbose/--no-verbose', default=False)
+def sqs_indexer(config, verbose=False):
     """Receive messages from SQS -> push to ES"""
+    logging.basicConfig(level=(verbose and logging.DEBUG or logging.INFO))
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    logging.getLogger('elasticsearch').setLevel(logging.WARNING)
 
     # validating config.
     with open(config) as fh:
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
-    print(config)
-    print(type(config))
     try:
         consumer_obj = SqsIndexer(config)
         consumer_obj.run()
     except Exception as e:
-        print("Exception fetching queues: {}".format(e))
+        log.exception("Exception: {}".format(e))
 
 if __name__ == '__main__':
     try:
