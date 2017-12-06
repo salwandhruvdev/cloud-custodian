@@ -19,7 +19,6 @@ import yaml
 import unittest
 from elasticmock import elasticmock
 from c7n_index import metrics
-from elasticsearch import Elasticsearch
 from elasticmock.fake_elasticsearch import FakeElasticsearch
 
 RESOURCE = {
