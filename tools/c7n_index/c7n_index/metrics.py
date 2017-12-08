@@ -457,10 +457,10 @@ def index_metrics(
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
 
-    # Since `accounts` is no longer a required property
+    # Since `accounts` and `idx_name`is no longer a required property
     # in the schema, validate it explicitly
-    if "accounts" not in config:
-        log.info("accounts is a required property")
+    if "accounts" not in config and "idx_name" not in config["indexer"]:
+        log.info("accounts/idx_name is a required property")
         return
 
     start, end = get_date_range(start, end)
@@ -549,10 +549,10 @@ def index_resources(
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
 
-    # Since `accounts` is no longer a required property
+    # Since `accounts` and `idx_name`is no longer a required property
     # in the schema, validate it explicitly
-    if "accounts" not in config:
-        log.info("accounts is a required property")
+    if "accounts" not in config and "idx_name" not in config["indexer"]:
+        log.info("accounts and idx_name is a required property")
         return
 
     with open(policies) as fh:
