@@ -3,7 +3,3 @@ indexer:
   host: localhost
   port: 9200
 
-sqs:
-  queue_url: "https://sqs.us-east-1.amazonaws.com/111222333444/test-queue"
-  region: "us-east-1"
-

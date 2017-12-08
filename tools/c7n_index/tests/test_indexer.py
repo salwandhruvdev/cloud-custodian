@@ -108,8 +108,6 @@ class ElasticsearchTest(unittest.TestCase):
         self.elasticsearch_obj = get_indexer(self.config)
 
     def test_valid_config(self):
-        self.assertIsNotNone(self.config['sqs']['queue_url'])
-        self.assertIsNotNone(self.config['sqs']['region'])
         self.assertIsNotNone(self.config['indexer'])
         self.assertIsNotNone(self.config['indexer']['host'])
         self.assertIsNotNone(self.config['indexer']['port'])
@@ -121,7 +119,7 @@ class ElasticsearchTest(unittest.TestCase):
 
     @elasticmock
     def test_send_elasticsearch(self):
-        res = self.elasticsearch_obj.index(SQS_MESSAGE)
+        res = self.elasticsearch_obj.index_sqs(SQS_MESSAGE)
         self.assertIsNotNone(res)
         self.assertEqual(res.get('_index'), 's3')
         self.assertTrue(res.get('created'))

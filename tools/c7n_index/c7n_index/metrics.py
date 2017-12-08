@@ -52,7 +52,7 @@ log = logging.getLogger('c7n.metrics')
 CONFIG_SCHEMA = {
     'type': 'object',
     'additionalProperties': False,
-    'required': ['indexer', 'sqs'],
+    'required': ['indexer'],
     'properties': {
         'indexer': {
             'oneOf': [
@@ -111,17 +111,7 @@ CONFIG_SCHEMA = {
                     'regions': {'type': 'array', 'items': {'type': 'string'}}
                 }
             }
-        },
-        'sqs': {
-                'type': 'object',
-                'additionalProperties': False,
-                'required': ['queue_url'],
-                'properties': {
-                    'type': {'enum': ['sqs']},
-                    'queue_url': {'type': 'string'},
-                    'region': {'type': 'string'}
-                }
-         }
+        }
     }
 }
 
@@ -164,26 +154,24 @@ class ElasticSearchIndexer(Indexer):
             **kwargs
         )
 
-    def index(self, data):
-        # for backward compatibility with indexing docs from s3
-        # using an if statement to determine the caller
+    def index(self, points):
+        for p in points:
+            p['_index'] = self.config['indexer']['idx_name']
+            p['_type'] = self.es_type
+
+        results = elasticsearch.helpers.streaming_bulk(self.client, points)
+        for status, r in results:
+            if not status:
+                log.debug("index err result %s", r)
+
+    def index_sqs(self, queue_msg):
         try:
-            if "sqs" in self.config:
-                res = self.client.index(
-                    index=data['policy']['resource'], doc_type=data['policy']['name'],
-                    body=data)
-                log.info("results: {}, index_created:{}, doc_type: {}".format(
-                    res, data['policy']['resource'], data['policy']['name']))
-                return res
-
-            for p in data:
-                p['_index'] = self.config['indexer']['idx_name']
-                p['_type'] = self.es_type
-
-            results = elasticsearch.helpers.streaming_bulk(self.client, data)
-            for status, r in results:
-                if not status:
-                    log.debug("index err result %s", r)
+            res = self.client.index(
+                index=queue_msg['policy']['resource'], doc_type=queue_msg['policy']['name'],
+                body=queue_msg)
+            log.info("results: {}, index_created:{}, doc_type: {}".format(
+                res, queue_msg['policy']['resource'], queue_msg['policy']['name']))
+            return res
         except Exception as e:
             log.debug("Error while Indexing: {}".format(e))
 
@@ -239,10 +227,10 @@ class InfluxIndexer(Indexer):
 
 class SqsIndexer(object):
 
-    def __init__(self, config):
+    def __init__(self, config, url):
         self.config = config
-        self.receive_queue = config['sqs']['queue_url']
-        self.region = config['sqs']['region']
+        self.receive_queue = url
+        self.region = url.split('.')[1]
         self.session = boto3.Session(region_name=self.region)
 
     def run(self):
@@ -259,7 +247,7 @@ class SqsIndexer(object):
                 if 'Tags' in resource and len(resource['Tags']) != 0:
                     resource['Tags'] = {
                         t['Key']: t['Value'] for t in resource['Tags']}
-            indexer.index(msg_json)
+            indexer.index_sqs(msg_json)
             msg_iterator.ack(msg)
 
 
@@ -469,6 +457,12 @@ def index_metrics(
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
 
+    # Since `accounts` is no longer a required property
+    # in the schema, validate it explicitly
+    if "accounts" not in config:
+        log.info("accounts is a required property")
+        return
+
     start, end = get_date_range(start, end)
 
     p_accounts = set()
@@ -601,8 +595,9 @@ def index_resources(
 
 @cli.command(name='sqs-indexer')
 @click.option('-c', '--config', required=True, help="Config file")
+@click.option('-u', '--url', required=True, help="Queue URL")
 @click.option('--verbose/--no-verbose', default=False)
-def sqs_indexer(config, verbose=False):
+def sqs_indexer(config, url, verbose=False):
     """Receive messages from SQS -> push to ES"""
     logging.basicConfig(level=(verbose and logging.DEBUG or logging.INFO))
     logging.getLogger('botocore').setLevel(logging.WARNING)
@@ -612,8 +607,9 @@ def sqs_indexer(config, verbose=False):
     with open(config) as fh:
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
+
     try:
-        consumer_obj = SqsIndexer(config)
+        consumer_obj = SqsIndexer(config, url)
         consumer_obj.run()
     except Exception as e:
         log.exception("Exception: {}".format(e))
