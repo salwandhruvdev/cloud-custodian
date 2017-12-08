@@ -620,6 +620,7 @@ def sqs_indexer(config, url, verbose=False):
     except Exception as e:
         log.exception("Exception: {}".format(e))
 
+
 if __name__ == '__main__':
     try:
         cli()
