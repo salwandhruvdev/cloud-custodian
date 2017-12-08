@@ -527,7 +527,7 @@ def index_metrics(
 
 @cli.command(name='index-resources')
 @click.option('-c', '--config', required=True, help="Config file")
-# @click.option('-p', '--policies', required=True, help="Policy file")
+@click.option('-p', '--policies', required=True, help="Policy file")
 @click.option('--date', required=False, help="Start date")
 @click.option('--concurrency', default=5)
 @click.option('-a', '--accounts', multiple=True)
