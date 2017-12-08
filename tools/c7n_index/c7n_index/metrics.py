@@ -549,6 +549,12 @@ def index_resources(
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
 
+    # Since `accounts` is no longer a required property
+    # in the schema, validate it explicitly
+    if "accounts" not in config:
+        log.info("accounts is a required property")
+        return
+
     with open(policies) as fh:
         policies = yaml.safe_load(fh.read())
     load_resources()
