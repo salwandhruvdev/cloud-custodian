@@ -47,6 +47,9 @@ from c7n.utils import chunks, dumps, get_retry, local_session, loads
 MAX_POINTS = 1440.0
 NAMESPACE = 'CloudMaid'
 
+
+## Get rid of type
+# multithreading
 log = logging.getLogger('c7n.metrics')
 
 CONFIG_SCHEMA = {
@@ -167,10 +170,9 @@ class ElasticSearchIndexer(Indexer):
     def index_sqs(self, queue_msg):
         try:
             res = self.client.index(
-                index=queue_msg['policy']['resource'], doc_type=queue_msg['policy']['name'],
-                body=queue_msg)
-            log.info("results: {}, index_created:{}, doc_type: {}".format(
-                res, queue_msg['policy']['resource'], queue_msg['policy']['name']))
+                index="c7n",doc_type="c7n", body=queue_msg)
+            log.info("results: {}, index_created:{}".format(
+                res, queue_msg['policy']['resource']))
             return res
         except Exception as e:
             log.debug("Error while Indexing: {}".format(e))
@@ -237,18 +239,21 @@ class SqsIndexer(object):
         client = self.session.client('sqs')
         msg_iterator = sqsexec.MessageIterator(client, self.receive_queue)
         indexer = get_indexer(self.config)
+        futures = []
 
         # iterate messages using __next__ in MessageIterator
-        for msg in msg_iterator:
-            msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
+        with ProcessPoolExecutor(max_workers=4) as w:
+            for msg in msg_iterator:
+                msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
 
-            # Reformat tags for ease of index/search
-            for resource in msg_json['resources']:
-                if 'Tags' in resource and len(resource['Tags']) != 0:
-                    resource['Tags'] = {
-                        t['Key']: t['Value'] for t in resource['Tags']}
-            indexer.index_sqs(msg_json)
-            msg_iterator.ack(msg)
+                # Reformat tags for ease of index/search
+                for resource in msg_json['resources']:
+                    if 'Tags' in resource and len(resource['Tags']) != 0:
+                        resource['Tags'] = {
+                            t['Key']: t['Value'] for t in resource['Tags']}
+                futures.append(w.submit(indexer.index_sqs, msg_json))
+                # msg_iterator.ack(msg)
+
 
 
 def index_metric_set(indexer, account, region, metric_set, start, end, period):
@@ -599,11 +604,11 @@ def index_resources(
                 account['name'], region, policy['name']))
 
 
-@cli.command(name='sqs-indexer')
+@cli.command(name='sqs-consumer')
 @click.option('-c', '--config', required=True, help="Config file")
 @click.option('-u', '--url', required=True, help="Queue URL")
 @click.option('--verbose/--no-verbose', default=False)
-def sqs_indexer(config, url, verbose=False):
+def sqs_consumer(config, url, verbose=False):
     """Receive messages from SQS -> push to ES"""
     logging.basicConfig(level=(verbose and logging.DEBUG or logging.INFO))
     logging.getLogger('botocore').setLevel(logging.WARNING)
