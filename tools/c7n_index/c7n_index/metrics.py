@@ -398,6 +398,18 @@ def valid_date(date, delta=0):
     return date
 
 
+def index_sqs_msgs(config, msg_json):
+
+    indexer = get_indexer(config)
+
+    # Reformat tags for ease of index/search
+    for resource in msg_json['resources']:
+        if 'Tags' in resource and len(resource['Tags']) != 0:
+            resource['Tags'] = {
+                t['Key']: t['Value'] for t in resource['Tags']}
+    indexer.index_sqs(queue_msg=msg_json)
+
+
 @click.group()
 def cli():
     """Custodian Indexing"""
@@ -572,18 +584,6 @@ def index_resources(
                 account['name'], region, policy['name']))
 
 
-def index_sqs_msgs(config, msg_json):
-
-    indexer = get_indexer(config)
-
-    # Reformat tags for ease of index/search
-    for resource in msg_json['resources']:
-        if 'Tags' in resource and len(resource['Tags']) != 0:
-            resource['Tags'] = {
-                t['Key']: t['Value'] for t in resource['Tags']}
-    indexer.index_sqs(queue_msg=msg_json)
-
-
 @cli.command(name='sqs-consumer')
 @click.option('-c', '--config', required=True, help="Config file")
 @click.option('-u', '--url', required=True, help="Queue URL")
@@ -613,17 +613,19 @@ def sqs_consumer(config, url,concurrency, verbose=False):
                 msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
                 log.info("submit account: {} region: {}, policy_name {}".format(
                     msg_json['account'], msg_json['region'], msg_json['policy']['name']))
-                futures[w.submit(index_sqs_msgs, config, msg_json)] = msg_json
+                futures[w.submit(index_sqs_msgs, config, msg_json)] = (msg, msg_json)
 
             # Processes completed
             for f in futures:
+                msg, msg_json = futures[f]
                 if f.exception():
                     log.warning(
                         "error account:{} region:{} policy:{} error:{}".format(
-                            futures[f]['account'], futures[f]['region'], futures[f]['policy']['name'], f.exception()))
+                            msg_json['account'], msg_json['region'], msg_json['policy']['name'], f.exception()))
                     continue
+                msg_iterator.ack(msg)
                 log.info("completed account:{} region:{} policy:{}".format(
-                    futures[f]['account'], futures[f]['region'], futures[f]['policy']['name']))
+                    msg_json['account'], msg_json['region'], msg_json['policy']['name']))
     except Exception as e:
         log.exception("Exception: {}".format(e))
 
