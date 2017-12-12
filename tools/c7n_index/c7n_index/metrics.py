@@ -168,7 +168,9 @@ class ElasticSearchIndexer(Indexer):
     def index_sqs(self, queue_msg):
         try:
             res = self.client.index(
-                index=self.config['idx_name'],doc_type=self.config['doc_type'], body=queue_msg)
+                index=self.config.get('idx_name','c7n'),
+                doc_type=self.config.get('doc_type', 'c7n'),
+                body=queue_msg)
             log.info("results: {}, index_created:{}".format(
                 res, queue_msg['policy']['resource']))
             return res
