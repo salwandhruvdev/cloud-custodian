@@ -67,6 +67,7 @@ CONFIG_SCHEMA = {
                         'user': {'type': 'string'},
                         'password': {'type': 'string'},
                         'idx_name': {'type': 'string'},
+                        'doc_type': {'type': 'string'},
                         'query': {'type': 'string'}
                     }
                 },
@@ -167,7 +168,7 @@ class ElasticSearchIndexer(Indexer):
     def index_sqs(self, queue_msg):
         try:
             res = self.client.index(
-                index="c7n",doc_type="c7n", body=queue_msg)
+                index=self.config['idx_name'],doc_type=self.config['doc_type'], body=queue_msg)
             log.info("results: {}, index_created:{}".format(
                 res, queue_msg['policy']['resource']))
             return res
