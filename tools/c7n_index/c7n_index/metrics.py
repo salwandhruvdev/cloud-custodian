@@ -68,6 +68,7 @@ CONFIG_SCHEMA = {
                         'password': {'type': 'string'},
                         'idx_name': {'type': 'string'},
                         'doc_type': {'type': 'string'},
+                        'kms_decrypt_password': {'type': 'string'},
                         'query': {'type': 'string'}
                     }
                 },
@@ -602,6 +603,12 @@ def sqs_consumer(config, url,concurrency, verbose=False):
     with open(config) as fh:
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
+
+    # decrypt KMS password
+    if config.get('kms_decrypt_password', True):
+        kms = boto3.client('kms')
+        config['indexer']['password'] = kms.decrypt(
+            CiphertextBlob=base64.b64decode(config['indexer']['password']))['Plaintext']
 
     # setup variables
     region = url.split('.')[1]
