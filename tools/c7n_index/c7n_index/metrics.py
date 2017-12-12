@@ -47,9 +47,6 @@ from c7n.utils import chunks, dumps, get_retry, local_session, loads
 MAX_POINTS = 1440.0
 NAMESPACE = 'CloudMaid'
 
-
-## Get rid of type
-# multithreading
 log = logging.getLogger('c7n.metrics')
 
 CONFIG_SCHEMA = {
@@ -575,8 +572,8 @@ def index_resources(
                 account['name'], region, policy['name']))
 
 
-def index_sqs_msgs(config, queue_msg):
-    msg_json = json.loads(zlib.decompress(base64.b64decode(queue_msg['Body'])))
+def index_sqs_msgs(config, msg_json):
+
     indexer = get_indexer(config)
 
     # Reformat tags for ease of index/search
@@ -610,10 +607,23 @@ def sqs_consumer(config, url,concurrency, verbose=False):
 
     try:
         with ProcessPoolExecutor(max_workers=concurrency) as w:
-            futures = []
+            futures = {}
 
             for msg in msg_iterator:
-                futures.append(w.submit(index_sqs_msgs(config=config, queue_msg=msg)))
+                msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
+                log.info("submit account: {} region: {}, policy_name {}".format(
+                    msg_json['account'], msg_json['region'], msg_json['policy']['name']))
+                futures[w.submit(index_sqs_msgs, config, msg_json)] = msg_json
+
+            # Processes completed
+            for f in futures:
+                if f.exception():
+                    log.warning(
+                        "error account:{} region:{} policy:{} error:{}".format(
+                            futures[f]['account'], futures[f]['region'], futures[f]['policy']['name'], f.exception()))
+                    continue
+                log.info("completed account:{} region:{} policy:{}".format(
+                    futures[f]['account'], futures[f]['region'], futures[f]['policy']['name']))
     except Exception as e:
         log.exception("Exception: {}".format(e))
 
