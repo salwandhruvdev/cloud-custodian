@@ -625,10 +625,11 @@ def sqs_consumer(config, url, verbose=False):
     except Exception as e:
         log.exception("Exception: {}".format(e))
 
+
 if __name__ == '__main__':
     try:
         cli()
     except Exception as e:
         import traceback, pdb, sys
-        print traceback.print_exc()
+        traceback.print_exc()
         pdb.post_mortem(sys.exc_info()[-1])
