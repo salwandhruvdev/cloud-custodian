@@ -121,5 +121,5 @@ class ElasticsearchTest(unittest.TestCase):
     def test_send_elasticsearch(self):
         res = self.elasticsearch_obj.index_sqs(SQS_MESSAGE)
         self.assertIsNotNone(res)
-        self.assertEqual(res.get('_index'), 's3')
+        self.assertEqual(res.get('_index'), 'c7n')
         self.assertTrue(res.get('created'))

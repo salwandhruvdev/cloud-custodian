@@ -37,7 +37,7 @@ from c7n.credentials import assumed_session, SessionFactory
 from c7n.registry import PluginRegistry
 from c7n.reports import csvout as s3_resource_parser
 from c7n.resources import load_resources
-from c7n.utils import chunks, dumps, get_retry, local_session, loads
+from c7n.utils import chunks, dumps, get_retry, local_session
 
 # from c7n.executor import MainThreadExecutor
 # ThreadPoolExecutor = MainThreadExecutor
