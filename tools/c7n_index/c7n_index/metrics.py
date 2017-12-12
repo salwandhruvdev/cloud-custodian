@@ -227,35 +227,6 @@ class InfluxIndexer(Indexer):
         self.client.write_points(measurements)
 
 
-class SqsIndexer(object):
-
-    def __init__(self, config, url):
-        self.config = config
-        self.receive_queue = url
-        self.region = url.split('.')[1]
-        self.session = boto3.Session(region_name=self.region)
-
-    def run(self):
-        client = self.session.client('sqs')
-        msg_iterator = sqsexec.MessageIterator(client, self.receive_queue)
-        indexer = get_indexer(self.config)
-        futures = []
-
-        # iterate messages using __next__ in MessageIterator
-        with ProcessPoolExecutor(max_workers=4) as w:
-            for msg in msg_iterator:
-                msg_json = json.loads(zlib.decompress(base64.b64decode(msg['Body'])))
-
-                # Reformat tags for ease of index/search
-                for resource in msg_json['resources']:
-                    if 'Tags' in resource and len(resource['Tags']) != 0:
-                        resource['Tags'] = {
-                            t['Key']: t['Value'] for t in resource['Tags']}
-                futures.append(w.submit(indexer.index_sqs, msg_json))
-                # msg_iterator.ack(msg)
-
-
-
 def index_metric_set(indexer, account, region, metric_set, start, end, period):
     session = local_session(
         lambda : assumed_session(account['role'], 'PolicyIndex'))
@@ -604,11 +575,24 @@ def index_resources(
                 account['name'], region, policy['name']))
 
 
+def index_sqs_msgs(config, queue_msg):
+    msg_json = json.loads(zlib.decompress(base64.b64decode(queue_msg['Body'])))
+    indexer = get_indexer(config)
+
+    # Reformat tags for ease of index/search
+    for resource in msg_json['resources']:
+        if 'Tags' in resource and len(resource['Tags']) != 0:
+            resource['Tags'] = {
+                t['Key']: t['Value'] for t in resource['Tags']}
+    indexer.index_sqs(queue_msg=msg_json)
+
+
 @cli.command(name='sqs-consumer')
 @click.option('-c', '--config', required=True, help="Config file")
 @click.option('-u', '--url', required=True, help="Queue URL")
+@click.option('--concurrency', default=5)
 @click.option('--verbose/--no-verbose', default=False)
-def sqs_consumer(config, url, verbose=False):
+def sqs_consumer(config, url,concurrency, verbose=False):
     """Receive messages from SQS -> push to ES"""
     logging.basicConfig(level=(verbose and logging.DEBUG or logging.INFO))
     logging.getLogger('botocore').setLevel(logging.WARNING)
@@ -619,9 +603,17 @@ def sqs_consumer(config, url, verbose=False):
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
 
+    # setup variables
+    region = url.split('.')[1]
+    client = boto3.Session(region_name=region).client('sqs')
+    msg_iterator = sqsexec.MessageIterator(client=client, queue_url=url)
+
     try:
-        consumer_obj = SqsIndexer(config, url)
-        consumer_obj.run()
+        with ProcessPoolExecutor(max_workers=concurrency) as w:
+            futures = []
+
+            for msg in msg_iterator:
+                futures.append(w.submit(index_sqs_msgs(config=config, queue_msg=msg)))
     except Exception as e:
         log.exception("Exception: {}".format(e))
 
