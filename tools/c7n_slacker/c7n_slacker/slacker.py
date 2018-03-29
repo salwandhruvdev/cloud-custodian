@@ -17,14 +17,14 @@ import base64
 import boto3
 import click
 import jsonschema
-
 import yaml
 
+from slackclient import SlackClient
 from c7n import sqsexec
 from c7n.utils import get_retry
 
 
-log = logging.getLogger('c7n.metrics')
+log = logging.getLogger('c7n.slack')
 
 CONFIG_SCHEMA = {
     'type': 'object',
@@ -34,12 +34,11 @@ CONFIG_SCHEMA = {
         'slacker': {
             'type': 'object',
             'additionalProperties': False,
-            'required': ['host', 'port'],
+            'required': ['type', 'client_id', 'client_secret'],
             'properties': {
                 'type': {'enum': ['slack']},
-                'token': {'type': 'string'},
-                'user': {'type': 'string'},
-                'channel': {'type': 'string'}
+                'client_id': {'type': 'string'},
+                'client_secret': {'type': 'string'}
             }
         }
     }
@@ -48,6 +47,17 @@ CONFIG_SCHEMA = {
 retry = get_retry(('Throttling',), log_retries=True)
 
 
+def get_token(client_id, client_secret):
+    sc = SlackClient("")
+
+    # Request the auth tokens from Slack
+    auth_response = sc.api_call(
+        "oauth.access",
+        client_id=client_id,
+        client_secret=client_secret
+    )
+    print auth_response['access_token']
+
 @click.group()
 def cli():
     """Custodian Slacker"""
@@ -55,22 +65,22 @@ def cli():
 
 @cli.command(name='slacker')
 @click.option('-c', '--config', required=True, help="Config file")
-@click.option('-u', '--url', required=True, help="Queue URL")
 @click.option('--concurrency', default=5)
 @click.option('--verbose/--no-verbose', default=False)
-def consumer(config, url, concurrency, verbose=False):
-    """Receive messages from SQS -> push to ES"""
+def consumer(config, concurrency, verbose=False):
+    """"""
     logging.basicConfig(level=(verbose and logging.DEBUG or logging.INFO))
     logging.getLogger('botocore').setLevel(logging.WARNING)
     logging.getLogger('urllib3').setLevel(logging.DEBUG)
 
+    with open(config) as fh:
+        config = yaml.safe_load(fh.read())
+    jsonschema.validate(config, CONFIG_SCHEMA)
 
-    # log.debug('attempting to get messages from sqs')
+    print config.get("slacker")
+    get_token(config.get("slacker").get("client_id"), config.get("slacker").get("client_secret"))
 
-    # validating config.
-    # with open(config) as fh:
-    #     config = yaml.safe_load(fh.read())
-    # jsonschema.validate(config, CONFIG_SCHEMA)
+
     #
     # region_name = config.get('region', 'us-east-1')
     #
