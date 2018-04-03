@@ -46,18 +46,6 @@ CONFIG_SCHEMA = {
 
 retry = get_retry(('Throttling',), log_retries=True)
 
-
-def get_token(client_id, client_secret):
-    sc = SlackClient("")
-
-    # Request the auth tokens from Slack
-    auth_response = sc.api_call(
-        "oauth.access",
-        client_id=client_id,
-        client_secret=client_secret
-    )
-    print auth_response['access_token']
-
 @click.group()
 def cli():
     """Custodian Slacker"""
@@ -78,8 +66,6 @@ def consumer(config, concurrency, verbose=False):
     jsonschema.validate(config, CONFIG_SCHEMA)
 
     print config.get("slacker")
-    get_token(config.get("slacker").get("client_id"), config.get("slacker").get("client_secret"))
-
 
     #
     # region_name = config.get('region', 'us-east-1')
