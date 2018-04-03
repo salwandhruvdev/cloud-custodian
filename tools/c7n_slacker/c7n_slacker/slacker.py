@@ -34,11 +34,10 @@ CONFIG_SCHEMA = {
         'slacker': {
             'type': 'object',
             'additionalProperties': False,
-            'required': ['type', 'client_id', 'client_secret'],
+            'required': ['type', 'encrypted_token'],
             'properties': {
                 'type': {'enum': ['slack']},
-                'client_id': {'type': 'string'},
-                'client_secret': {'type': 'string'}
+                'encrypted_token': {'type': 'string'}
             }
         }
     }
@@ -65,8 +64,13 @@ def consumer(config, concurrency, verbose=False):
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
 
-    print config.get("slacker")
+    print config.get("slacker").get("encrypted_token")
 
+    sc = SlackClient(config.get("slacker").get("encrypted_token"))
+    print sc.api_call(
+            "channels.list",
+            exclude_archived=1
+    )
     #
     # region_name = config.get('region', 'us-east-1')
     #
