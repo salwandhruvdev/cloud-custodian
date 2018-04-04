@@ -32,9 +32,15 @@ class LdapLookup():
         self.email_key = config.get('ldap_email_key', 'mail')
         self.uid_key   = config.get('ldap_uid_attribute_name', 'sAMAccountName')
         self.manager_attr = config.get('ldap_manager_attribute', 'manager')
+<<<<<<< HEAD
         self.uid       = 'ijm065' # read from SQS
         self.attributes = ['displayName', self.uid_key, self.email_key, self.manager_attr]
 
+=======
+        self.attributes = ['displayName', self.uid_key, self.email_key, self.manager_attr]
+
+
+>>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
     def search_ldap(self,):
         ldap_filter = '(%s=%s)' % (self.uid_key, self.uid)
         self.log.debug('Initiating LDAP search...')
@@ -77,4 +83,8 @@ class LdapLookup():
                 auto_referrals=False,
             )
         except LDAPSocketOpenError:
+<<<<<<< HEAD
             self.log.error('Not able to establish a connection with LDAP.')
+=======
+            self.log.error('Not able to establish a connection with LDAP.')
+>>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625

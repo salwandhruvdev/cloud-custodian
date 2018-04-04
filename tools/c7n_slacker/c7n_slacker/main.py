@@ -15,6 +15,7 @@
 import logging
 import boto3
 import yaml
+<<<<<<< HEAD
 import click
 from ldap import LdapLookup
 
@@ -36,6 +37,10 @@ CONFIG_SCHEMA = {
         }
     }
 }
+=======
+from ldap import LdapLookup
+
+>>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
 
 def session_factory(config):
     return boto3.Session(
@@ -64,7 +69,10 @@ def get_config(parser_config):
         set_config_defaults(config)
     return config
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
 def get_logger(debug=False):
     log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     logging.basicConfig(level=logging.INFO, format=log_format)
@@ -77,6 +85,7 @@ def get_logger(debug=False):
     else:
         return logging.getLogger('c7n-slacker')
 
+<<<<<<< HEAD
 
 @click.group()
 def cli():
@@ -87,6 +96,8 @@ def cli():
 @click.option('-c', '--config', required=True, help="Config file")
 @click.option('--concurrency', default=5)
 @click.option('--verbose/--no-verbose', default=False)
+=======
+>>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
 def start():
     # Fetch from SQS
 
