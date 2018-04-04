@@ -26,34 +26,10 @@ from c7n.utils import get_retry
 
 log = logging.getLogger('c7n.slack')
 
-CONFIG_SCHEMA = {
-    'type': 'object',
-    'additionalProperties': False,
-    'required': ['slacker'],
-    'properties': {
-        'slacker': {
-            'type': 'object',
-            'additionalProperties': False,
-            'required': ['type', 'encrypted_token'],
-            'properties': {
-                'type': {'enum': ['slack']},
-                'encrypted_token': {'type': 'string'}
-            }
-        }
-    }
-}
-
 retry = get_retry(('Throttling',), log_retries=True)
 
-@click.group()
-def cli():
-    """Custodian Slacker"""
 
-
-@cli.command(name='slacker')
-@click.option('-c', '--config', required=True, help="Config file")
-@click.option('--concurrency', default=5)
-@click.option('--verbose/--no-verbose', default=False)
+# Create class for consumer
 def consumer(config, concurrency, verbose=False):
     """"""
     logging.basicConfig(level=(verbose and logging.DEBUG or logging.INFO))
@@ -67,10 +43,9 @@ def consumer(config, concurrency, verbose=False):
     print config.get("slacker").get("encrypted_token")
 
     sc = SlackClient(config.get("slacker").get("encrypted_token"))
-    print sc.api_call(
-            "channels.list",
-            exclude_archived=1
-    )
+    print sc.api_call("chat.postMessage",
+                        channel="c7n-slacker-bot",
+                        text="Hello from Python! :tada:")
     #
     # region_name = config.get('region', 'us-east-1')
     #

@@ -32,9 +32,8 @@ class LdapLookup():
         self.email_key = config.get('ldap_email_key', 'mail')
         self.uid_key   = config.get('ldap_uid_attribute_name', 'sAMAccountName')
         self.manager_attr = config.get('ldap_manager_attribute', 'manager')
-        self.uid       = 'ijm065'
+        self.uid       = 'ijm065' # read from SQS
         self.attributes = ['displayName', self.uid_key, self.email_key, self.manager_attr]
-
 
     def search_ldap(self,):
         ldap_filter = '(%s=%s)' % (self.uid_key, self.uid)

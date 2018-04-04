@@ -15,13 +15,33 @@
 import logging
 import boto3
 import yaml
+import click
 from ldap import LdapLookup
 
+
+
+CONFIG_SCHEMA = {
+    'type': 'object',
+    'additionalProperties': False,
+    'required': ['slacker'],
+    'properties': {
+        'slacker': {
+            'type': 'object',
+            'additionalProperties': False,
+            'required': ['type', 'encrypted_token'],
+            'properties': {
+                'type': {'enum': ['slack']},
+                'encrypted_token': {'type': 'string'}
+            }
+        }
+    }
+}
 
 def session_factory(config):
     return boto3.Session(
         region_name=config['region'],
         profile_name=config.get('profile'))
+
 
 def set_config_defaults(config):
     config.setdefault('region', 'us-east-1')
@@ -37,11 +57,13 @@ def set_config_defaults(config):
     config.setdefault('ldap_bind_user', None)
     config.setdefault('ldap_bind_password', None)
 
+
 def get_config(parser_config):
     with open(parser_config) as fh:
         config = yaml.load(fh.read(), Loader=yaml.SafeLoader)
         set_config_defaults(config)
     return config
+
 
 def get_logger(debug=False):
     log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -55,7 +77,19 @@ def get_logger(debug=False):
     else:
         return logging.getLogger('c7n-slacker')
 
+
+@click.group()
+def cli():
+    """Custodian Slacker"""
+
+
+@cli.command(name='slacker')
+@click.option('-c', '--config', required=True, help="Config file")
+@click.option('--concurrency', default=5)
+@click.option('--verbose/--no-verbose', default=False)
 def start():
+    # Fetch from SQS
+
     parser_config = 'config.yml'
     config = get_config(parser_config)
 
@@ -72,6 +106,7 @@ def start():
 
 if __name__ == '__main__':
     try:
+
         start()
     except Exception as e:
         import traceback, pdb, sys
