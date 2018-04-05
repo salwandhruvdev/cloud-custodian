@@ -25,4 +25,6 @@ out/
 .DS_STORE
 .tox/
 results.xml
+config.yml
+test-policy.yml
 .idea/

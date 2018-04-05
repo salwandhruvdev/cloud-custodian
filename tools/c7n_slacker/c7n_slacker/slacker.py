@@ -24,14 +24,6 @@ from c7n import sqsexec
 from c7n.utils import get_retry
 
 
-log = logging.getLogger('c7n.slack')
-
-<<<<<<< HEAD
-retry = get_retry(('Throttling',), log_retries=True)
-
-
-# Create class for consumer
-=======
 CONFIG_SCHEMA = {
     'type': 'object',
     'additionalProperties': False,
@@ -40,16 +32,16 @@ CONFIG_SCHEMA = {
         'slacker': {
             'type': 'object',
             'additionalProperties': False,
-            'required': ['type', 'client_id', 'client_secret'],
+            'required': ['type', 'encrypted_token'],
             'properties': {
                 'type': {'enum': ['slack']},
-                'client_id': {'type': 'string'},
-                'client_secret': {'type': 'string'}
+                'encrypted_token': {'type': 'string'}
             }
         }
     }
 }
 
+log = logging.getLogger('c7n.slack')
 retry = get_retry(('Throttling',), log_retries=True)
 
 
@@ -64,16 +56,7 @@ def get_token(client_id, client_secret):
     )
     print auth_response['access_token']
 
-@click.group()
-def cli():
-    """Custodian Slacker"""
 
-
-@cli.command(name='slacker')
-@click.option('-c', '--config', required=True, help="Config file")
-@click.option('--concurrency', default=5)
-@click.option('--verbose/--no-verbose', default=False)
->>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
 def consumer(config, concurrency, verbose=False):
     """"""
     logging.basicConfig(level=(verbose and logging.DEBUG or logging.INFO))
@@ -84,19 +67,15 @@ def consumer(config, concurrency, verbose=False):
         config = yaml.safe_load(fh.read())
     jsonschema.validate(config, CONFIG_SCHEMA)
 
-<<<<<<< HEAD
     print config.get("slacker").get("encrypted_token")
 
     sc = SlackClient(config.get("slacker").get("encrypted_token"))
     print sc.api_call("chat.postMessage",
                         channel="c7n-slacker-bot",
                         text="Hello from Python! :tada:")
-=======
+
     print config.get("slacker")
     get_token(config.get("slacker").get("client_id"), config.get("slacker").get("client_secret"))
-
-
->>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
     #
     # region_name = config.get('region', 'us-east-1')
     #

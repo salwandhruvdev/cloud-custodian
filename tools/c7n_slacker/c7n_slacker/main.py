@@ -12,80 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import boto3
-import yaml
-<<<<<<< HEAD
 import click
-from ldap import LdapLookup
+from sqs_handler import SQSHandler
 
-
-
-CONFIG_SCHEMA = {
-    'type': 'object',
-    'additionalProperties': False,
-    'required': ['slacker'],
-    'properties': {
-        'slacker': {
-            'type': 'object',
-            'additionalProperties': False,
-            'required': ['type', 'encrypted_token'],
-            'properties': {
-                'type': {'enum': ['slack']},
-                'encrypted_token': {'type': 'string'}
-            }
-        }
-    }
-}
-=======
-from ldap import LdapLookup
-
->>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
-
-def session_factory(config):
-    return boto3.Session(
-        region_name=config['region'],
-        profile_name=config.get('profile'))
-
-
-def set_config_defaults(config):
-    config.setdefault('region', 'us-east-1')
-    config.setdefault('ses_region', config.get('region'))
-    config.setdefault('memory', 1024)
-    config.setdefault('runtime', 'python2.7')
-    config.setdefault('timeout', 300)
-    config.setdefault('subnets', None)
-    config.setdefault('security_groups', None)
-    config.setdefault('contact_tags', [])
-    config.setdefault('ldap_uri', None)
-    config.setdefault('ldap_bind_dn', None)
-    config.setdefault('ldap_bind_user', None)
-    config.setdefault('ldap_bind_password', None)
-
-
-def get_config(parser_config):
-    with open(parser_config) as fh:
-        config = yaml.load(fh.read(), Loader=yaml.SafeLoader)
-        set_config_defaults(config)
-    return config
-
-<<<<<<< HEAD
-
-=======
->>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
-def get_logger(debug=False):
-    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    logging.basicConfig(level=logging.INFO, format=log_format)
-    logging.getLogger('botocore').setLevel(logging.WARNING)
-    if debug:
-        logging.getLogger('botocore').setLevel(logging.DEBUG)
-        debug_logger = logging.getLogger('c7n-slacker')
-        debug_logger.setLevel(logging.DEBUG)
-        return debug_logger
-    else:
-        return logging.getLogger('c7n-slacker')
-
-<<<<<<< HEAD
 
 @click.group()
 def cli():
@@ -94,30 +23,21 @@ def cli():
 
 @cli.command(name='slacker')
 @click.option('-c', '--config', required=True, help="Config file")
-@click.option('--concurrency', default=5)
-@click.option('--verbose/--no-verbose', default=False)
-=======
->>>>>>> 1a0882f83492eb2ae14957e80f2494a5345f6625
-def start():
+def start(config):
     # Fetch from SQS
 
-    parser_config = 'config.yml'
-    config = get_config(parser_config)
+    slacker_handler = SQSHandler(config)
 
-    aws_session = session_factory(config)
-    logger = get_logger(debug=False)
+    messages = slacker_handler.process_sqs()
 
-    ldap_resource = LdapLookup(config, aws_session, logger)
+    results = slacker_handler.search_ldap(messages)
 
-    results = ldap_resource.search_ldap()
-
-    print results["mail"][0]
-
-    # print results
+    if results:
+        for r in results:
+            print r, results[r]
 
 if __name__ == '__main__':
     try:
-
         start()
     except Exception as e:
         import traceback, pdb, sys
