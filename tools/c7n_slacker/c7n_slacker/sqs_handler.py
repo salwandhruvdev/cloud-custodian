@@ -49,7 +49,7 @@ class SqsIterator(object):
         response = self.client.receive_message(
             QueueUrl=self.queue_url,
             WaitTimeSeconds=self.timeout,
-            MaxNumberOfMessages=10,
+            MaxNumberOfMessages=3,
             MessageAttributeNames=self.msg_attributes)
 
         msgs = response.get('Messages', [])
@@ -245,7 +245,6 @@ class SQSHandler():
 
         for m in sqs_fetch:
             message = m['Body']
-
             try:
                 self.logger.debug('Valid JSON')
                 msg_json = json.loads(zlib.decompress(base64.b64decode(message)))
@@ -266,7 +265,7 @@ class SQSHandler():
                 self.logger.warning("Invalid JSON")
                 pass
 
-            return messages
+        return messages
 
     def session_factory(self, config):
 
@@ -297,12 +296,21 @@ class SQSHandler():
             return logging.getLogger('c7n-slacker')
 
     def get_resource_owner_values(self, sqs_message):
-        tags = {tag['Key']: tag['Value'] for tag in sqs_message['Tags']}
-        for contact_tag in self.config.get('contact_tags'):
-            for tag in tags:
-                if tag == contact_tag:
-                    self.logger.debug("resource owner match: %s - %s", contact_tag, tags[contact_tag])
-                    return tags[contact_tag], contact_tag
+        if 'Tags' in sqs_message:
+            tags = {tag['Key']: tag['Value'] for tag in sqs_message['Tags']}
+        else:
+            self.logger.debug("No tags found on resource. Skipping")
+            return None, None
+
+        if tags:
+            for contact_tag in self.config.get('contact_tags'):
+                for tag in tags:
+                    if tag == contact_tag:
+                        self.logger.debug("resource owner match: %s - %s", contact_tag, tags[contact_tag])
+                        return tags[contact_tag], contact_tag
+        else:
+            self.logger.debug("No tags found.")
+            return None, None
 
     def target_is_email(self, target):
         if parseaddr(target)[1] and '@' in target and '.' in target:
@@ -311,7 +319,10 @@ class SQSHandler():
             return False
 
     def search_ldap(self, messages):
+        message_delimiter = 0
+        resource_delimiter = 0
         connection = self.get_ldap_session()
+        resource_list = {}
         target_list = {}
         if messages is None:
             self.logger.info("No messages left to process. Exiting SQS handler.")
@@ -319,30 +330,53 @@ class SQSHandler():
         for m in messages:
             for r in m['resources']:
                 if 'resource-owner' in m['action']['to']:
-                    resource_owner_value, matched_tag = self.get_resource_owner_values(r)
-                    if resource_owner_value is None:
-                        self.logger.debug("No resource owner value found. Skipping LDAP lookup.")
+                    try:
+                        resource_owner_value, matched_tag = self.get_resource_owner_values(r)
+                    except Exception as e:
+                        self.logger.warning("Error fetching resource owner value: %s" % e)
+                    if r is None or resource_owner_value is None:
+                        self.logger.debug("Resource details not found. Continuing....")
                         continue
                     else:
+                        resource_string = self.resource_format(r, m['policy']['resource'])
+                        self.logger.debug("resource string: %s", resource_string)
+                        resource_handler = {resource_delimiter: {'resource_string': resource_string}}
                         if (self.target_is_email(resource_owner_value)) is True:
-                            resource_string = self.resource_format(r, m['policy']['resource'])
                             self.logger.debug("%s %s: %s" % (resource_string, matched_tag, resource_owner_value))
                             self.logger.debug("Email address found. Passing back to handler.")
-                            target_list.update({resource_string : resource_owner_value})
+                            resource_handler[resource_delimiter].update({'resource_owner_value': resource_owner_value})
+                        elif (resource_owner_value.find("arn:aws:sns") != -1):
+                                self.logger.debug("Contact method is SNS topic. Skipping.")
+                                continue
                         else:
-                            self.logger.debug("Non-email address found. Doing LDAP lookup.")
+                            self.logger.debug("ID number found. Doing LDAP lookup.")
                             ldap_filter = '(%s=%s)' % (self.uid_key, resource_owner_value)
                             connection.search(self.base_dn, ldap_filter, attributes=self.attributes)
                             if len(connection.entries) == 0:
                                 self.logger.warning("user not found. base_dn: %s filter: %s", self.base_dn, ldap_filter)
-                                return {}
+                                continue
                             elif len(connection.entries) > 1:
                                 self.logger.warning("too many results for search")
-                                return {}
-                            resource_string = self.resource_format(r, m['policy']['resource'])
+                                continue
                             self.logger.debug("%s %s: %s" % (self.resource_format(r, m['policy']['resource']), matched_tag, connection.entries[0]['mail']))
                             self.logger.debug("LDAP lookup complete. Passing back to handler.")
-                            target_list.update({resource_string: connection.entries[0]['mail']})
+                            resource_handler.update({
+                                resource_delimiter: {'resource_owner_value': connection.entries[0]['mail']}})
+
+                        resource_handler[resource_delimiter].update(
+                            {'resource_type': m['policy']['resource']})
+                        resource_handler[resource_delimiter].update(
+                            {'action_desc': m['action']['action_desc']})
+                        resource_handler[resource_delimiter].update(
+                            {'violation_desc': m['action']['violation_desc']})
+
+                        resource_list.update(resource_handler)
+
+                        resource_delimiter += 1
+
+            target_list.update(resource_list)
+            message_delimiter += 1
+
         return target_list
 
     def get_ldap_session(self):

@@ -24,17 +24,12 @@ def cli():
 @cli.command(name='slacker')
 @click.option('-c', '--config', required=True, help="Config file")
 def start(config):
-    # Fetch from SQS
 
     slacker_handler = SQSHandler(config)
 
     messages = slacker_handler.process_sqs()
 
     results = slacker_handler.search_ldap(messages)
-
-    if results:
-        for r in results:
-            print r, results[r]
 
 if __name__ == '__main__':
     try:
