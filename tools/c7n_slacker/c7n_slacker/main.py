@@ -32,17 +32,9 @@ CONFIG_SCHEMA = {
         'contact_tags': {'type': 'array', 'items': {'type': 'string'}},
         'kms_decrypt_token': {'type': 'string'},
         'slack_token': {'type': 'string'},
-        'ldap_email_key': {'type': 'string'},
-        'ldap_uid_tags': {'type': 'array', 'items': {'type': 'string'}},
-        'debug': {'type': 'boolean'},
-        'ldap_uid_regex': {'type': 'string'},
         'ldap_uri': {'type': 'string'},
         'ldap_bind_dn': {'type': 'string'},
         'ldap_bind_user': {'type': 'string'},
-        'ldap_uid_attribute': {'type': 'string'},
-        'ldap_manager_attribute': {'type': 'string'},
-        'ldap_email_attribute': {'type': 'string'},
-        'ldap_bind_password_in_kms': {'type': 'boolean'},
         'ldap_bind_password': {'type': 'string'},
     }
 }
@@ -79,15 +71,10 @@ def start(config):
         config['slack_token'] = kms.decrypt(
             CiphertextBlob=base64.b64decode(config['slack_token']))['Plaintext']
 
-    #
-    # slacker_handler = SQSHandler(config, get_logger(debug=False))
-    #
-    # messages = slacker_handler.process_sqs()
-    #
-    # results = slacker_handler.search_ldap(messages)
-    #
-    # for i in results:
-    #     print results[i]['resource_owner_value']
+
+    slacker_handler = SQSHandler(config, get_logger(debug=False))
+
+    slacker_handler.process_sqs()
 
 if __name__ == '__main__':
     try:
