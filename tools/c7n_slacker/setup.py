@@ -28,6 +28,6 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'c7n-slacker = c7n_slacker.slacker:cli']},
-    install_requires=["c7n", "click", "influxdb", "elasticsearch"],
+            'c7n-slacker = c7n_slacker.main:cli']},
+    install_requires=["c7n", "click"],
 )

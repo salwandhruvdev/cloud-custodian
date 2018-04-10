@@ -16,7 +16,6 @@ import json
 from email.utils import parseaddr
 
 import yaml
-import logging
 import boto3
 import os
 
@@ -25,58 +24,14 @@ import zlib
 from botocore.exceptions import ClientError
 from ldap3 import Connection, Server
 from ldap3.core.exceptions import LDAPSocketOpenError
+from c7n import sqsexec
 
+class SQSHandler(object):
 
-class SqsIterator(object):
-
-    def __init__(self, client, queue_url, logger, timeout):
-        self.queue_url = queue_url
-        self.logger = logger
-        self.client = client
-        self.timeout = timeout
-        self.messages = []
-        self.iterator = # an object of from c7n import sqsexec
-
-    # Copied from custodian to avoid runtime library dependency
-    msg_attributes = ['sequence_id', 'op', 'ser']
-
-    # this and the next function make this object iterable with a for loop
-    def __iter__(self):
-        return self
-
-    # def __next__(self):
-    #     if self.messages:
-    #         return self.messages.pop(0)
-    #     response = self.client.receive_message(
-    #         QueueUrl=self.queue_url,
-    #         WaitTimeSeconds=self.timeout,
-    #         MaxNumberOfMessages=3,
-    #         MessageAttributeNames=self.msg_attributes)
-    #
-    #     msgs = response.get('Messages', [])
-    #     self.logger.info('Messages received %d', len(msgs))
-    #     for m in msgs:
-    #         self.messages.append(m)
-    #     if self.messages:
-    #         return self.messages.pop(0)
-    #     raise StopIteration()
-
-    # next = __next__  # python2.7
-    #
-    # def ack(self, m):
-    #     self.client.delete_message(
-    #         QueueUrl=self.queue_url,
-    #         ReceiptHandle=m['ReceiptHandle'])
-
-
-class SQSHandler():
-
-    def __init__(self, config):
-        with open(config) as fh:
-            new_config = yaml.load(fh.read(), Loader=yaml.SafeLoader)
-        self.config = new_config
+    def __init__(self, config, logger):
+        self.config = config
         self.session = self.session_factory(self.config)
-        self.logger = self.get_logger(debug=False)
+        self.logger = logger
         self.base_dn   = self.config.get('ldap_bind_dn')
         self.email_key = self.config.get('ldap_email_key', 'mail')
         self.uid_key   = self.config.get('ldap_uid_attribute_name', 'sAMAccountName')
@@ -241,7 +196,7 @@ class SQSHandler():
 
         messages = []
 
-        sqs_fetch = SqsIterator(client=self.session.client('sqs'), queue_url=self.config.get('queue_url'), logger=self.logger, timeout=0)
+        sqs_fetch = sqsexec.MessageIterator(client=self.session.client('sqs'), queue_url=self.config.get('queue_url'), timeout=0)
         self.logger.info('processing queue messages')
 
         for m in sqs_fetch:
@@ -283,18 +238,6 @@ class SQSHandler():
         return boto3.Session(
             region_name=set_region,
             profile_name=set_profile)
-
-    def get_logger(self, debug):
-        log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        logging.basicConfig(level=logging.INFO, format=log_format)
-        logging.getLogger('botocore').setLevel(logging.WARNING)
-        if debug:
-            logging.getLogger('botocore').setLevel(logging.DEBUG)
-            debug_logger = logging.getLogger('c7n-slacker')
-            debug_logger.setLevel(logging.DEBUG)
-            return debug_logger
-        else:
-            return logging.getLogger('c7n-slacker')
 
     def get_resource_owner_values(self, sqs_message):
         if 'Tags' in sqs_message:
