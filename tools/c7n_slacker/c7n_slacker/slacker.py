@@ -12,91 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import base64
-import boto3
-import click
-import jsonschema
-import yaml
+"""
+Thoughts:
+ - Token as part of schema, encrypted token
+ - Purpose of this file
+  - Create an interface to create a Slack Client(This can be done in __init__)
+  - Retrieve per user IM slack details details on the basis of LDAP lookup
+  - Send message to the User's IM
+
+"""
+
 
 from slackclient import SlackClient
-from c7n import sqsexec
-from c7n.utils import get_retry
 
 
-CONFIG_SCHEMA = {
-    'type': 'object',
-    'additionalProperties': False,
-    'required': ['slacker'],
-    'properties': {
-        'slacker': {
-            'type': 'object',
-            'additionalProperties': False,
-            'required': ['type', 'encrypted_token'],
-            'properties': {
-                'type': {'enum': ['slack']},
-                'encrypted_token': {'type': 'string'}
-            }
-        }
-    }
-}
+class SlackBot(object):
 
-log = logging.getLogger('c7n.slack')
-retry = get_retry(('Throttling',), log_retries=True)
+    def __init__(self, token):
+        self.client = SlackClient(token)
 
+    def retrieve_user_im(self, user_email):
+        response = self.client.api_call(
+                    "users.lookupByEmail", email=user_email)
+        return response
 
-def get_token(client_id, client_secret):
-    sc = SlackClient("")
+    def send_slack_msg(self, channel):
+        response = self.client.api_call(
+            "chat.postMessage", channel=channel, text="Hello from Python! :tada:")
+        return response
 
-    # Request the auth tokens from Slack
-    auth_response = sc.api_call(
-        "oauth.access",
-        client_id=client_id,
-        client_secret=client_secret
-    )
-    print auth_response['access_token']
-
-
-def consumer(config, concurrency, verbose=False):
-    """"""
-    logging.basicConfig(level=(verbose and logging.DEBUG or logging.INFO))
-    logging.getLogger('botocore').setLevel(logging.WARNING)
-    logging.getLogger('urllib3').setLevel(logging.DEBUG)
-
-    with open(config) as fh:
-        config = yaml.safe_load(fh.read())
-    jsonschema.validate(config, CONFIG_SCHEMA)
-
-    print config.get("slacker").get("encrypted_token")
-
-    sc = SlackClient(config.get("slacker").get("encrypted_token"))
-    print sc.api_call("chat.postMessage",
-                        channel="c7n-slacker-bot",
-                        text="Hello from Python! :tada:")
-
-    print config.get("slacker")
-    get_token(config.get("slacker").get("client_id"), config.get("slacker").get("client_secret"))
-    #
-    # region_name = config.get('region', 'us-east-1')
-    #
-    # # decrypt KMS password
-    # log.debug('decrypting kms password')
-    # if config.get('kms_decrypt_password', True) and config['indexer'].get('password'):
-    #     kms = boto3.Session(region_name=region_name).client('kms')
-    #     config['indexer']['password'] = kms.decrypt(
-    #         CiphertextBlob=base64.b64decode(config['indexer']['password']))['Plaintext']
-    #
-    # sqs_consumer = SQSConsumer(url=url, config=config, concurrency=concurrency)
-    #
-    # log.debug('processing messages from sqs')
-    # sqs_consumer.process()
-
-
-if __name__ == '__main__':
-    try:
-        cli()
-    except Exception as e:
-        log.error(e)
-        import traceback, pdb, sys
-        traceback.print_exc()
-        pdb.post_mortem(sys.exc_info()[-1])
