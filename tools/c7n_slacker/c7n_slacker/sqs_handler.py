@@ -35,6 +35,7 @@ class SqsIterator(object):
         self.client = client
         self.timeout = timeout
         self.messages = []
+        self.iterator = # an object of from c7n import sqsexec
 
     # Copied from custodian to avoid runtime library dependency
     msg_attributes = ['sequence_id', 'op', 'ser']
@@ -43,29 +44,29 @@ class SqsIterator(object):
     def __iter__(self):
         return self
 
-    def __next__(self):
-        if self.messages:
-            return self.messages.pop(0)
-        response = self.client.receive_message(
-            QueueUrl=self.queue_url,
-            WaitTimeSeconds=self.timeout,
-            MaxNumberOfMessages=3,
-            MessageAttributeNames=self.msg_attributes)
+    # def __next__(self):
+    #     if self.messages:
+    #         return self.messages.pop(0)
+    #     response = self.client.receive_message(
+    #         QueueUrl=self.queue_url,
+    #         WaitTimeSeconds=self.timeout,
+    #         MaxNumberOfMessages=3,
+    #         MessageAttributeNames=self.msg_attributes)
+    #
+    #     msgs = response.get('Messages', [])
+    #     self.logger.info('Messages received %d', len(msgs))
+    #     for m in msgs:
+    #         self.messages.append(m)
+    #     if self.messages:
+    #         return self.messages.pop(0)
+    #     raise StopIteration()
 
-        msgs = response.get('Messages', [])
-        self.logger.info('Messages received %d', len(msgs))
-        for m in msgs:
-            self.messages.append(m)
-        if self.messages:
-            return self.messages.pop(0)
-        raise StopIteration()
-
-    next = __next__  # python2.7
-
-    def ack(self, m):
-        self.client.delete_message(
-            QueueUrl=self.queue_url,
-            ReceiptHandle=m['ReceiptHandle'])
+    # next = __next__  # python2.7
+    #
+    # def ack(self, m):
+    #     self.client.delete_message(
+    #         QueueUrl=self.queue_url,
+    #         ReceiptHandle=m['ReceiptHandle'])
 
 
 class SQSHandler():
