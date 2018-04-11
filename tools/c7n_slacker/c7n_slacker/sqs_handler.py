@@ -13,19 +13,19 @@
 # limitations under the License.
 import base64
 import json
+import os
+import zlib
 from email.utils import parseaddr
 
-import yaml
 import boto3
-import os
-
-import zlib
-
 from botocore.exceptions import ClientError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ldap3 import Connection, Server
 from ldap3.core.exceptions import LDAPSocketOpenError
+
 from c7n import sqsexec
+from slacker import SlackBot
+
 
 class SQSHandler(object):
 
@@ -190,10 +190,10 @@ class SQSHandler(object):
         else:
             return "%s" % r
 
-    def message_handler(self, connection, msg):
+    def message_handler(self, connection, config, msg):
         message = msg['Body']
         try:
-            self.logger.info('Valid JSON')
+            self.logger.debug('Valid JSON')
             msg_json = json.loads(zlib.decompress(base64.b64decode(message)))
             self.logger.info(
                 "Acct: %s,  msg: %s, resource type: %s, count: %d, policy: %s, recipients: %s, action_desc: %s, violation_desc: %s" % (
@@ -210,17 +210,26 @@ class SQSHandler(object):
             return
 
         if 'resource-owner' not in msg_json['action']['to']:
-            self.logger.debug("No resource owner found. Skipping message.")
+            self.logger.debug("Resource owner indicator not found. Skipping message.")
+
+        resource_dict = {}
+
+        resource_dict['account'] = msg_json['account']
+        resource_dict['account_id'] = msg_json['account_id']
+        resource_dict['region'] = msg_json['region']
+        resource_dict['action_desc'] = msg_json['action']['action_desc']
+        resource_dict['violation_desc'] = msg_json['action']['violation_desc']
 
         for resource in msg_json['resources']:
             try:
                 resource_owner_value, matched_tag = self.get_resource_owner_values(resource)
             except Exception as e:
-                self.logger.warning("Error fetching resource owner value: %s" % e)
+                self.logger.debug("Error fetching resource owner value: %s" % e)
+                continue
 
             if resource is None or resource_owner_value is None:
-                self.logger.debug("Resource details not found. Continuing....")
-                return
+                self.logger.debug("Resource details not found. Skipping message....")
+                continue
             else:
                 resource_string = self.resource_format(resource, msg_json['policy']['resource'])
                 self.logger.debug("resource string: %s", resource_string)
@@ -231,38 +240,55 @@ class SQSHandler(object):
                     resource_owner_value = resource_owner_value
                 elif (resource_owner_value.find("arn:aws:sns") != -1):
                     self.logger.debug("Contact method is SNS topic. Skipping.")
-                    return
+                    continue
                 else:
                     self.logger.debug("ID number found. Doing LDAP lookup.")
                     ldap_filter = '(%s=%s)' % (self.uid_key, resource_owner_value)
                     connection.search(self.base_dn, ldap_filter, attributes=self.attributes)
                     if len(connection.entries) == 0:
-                        self.logger.warning("user not found. base_dn: %s filter: %s", self.base_dn, ldap_filter)
-                        return
+                        self.logger.warning("User not found. base_dn: %s filter: %s", self.base_dn, ldap_filter)
+                        continue
                     elif len(connection.entries) > 1:
-                        self.logger.warning("too many results for search")
-                        return
+                        self.logger.warning("Multiple results returned.")
+                        continue
                     else:
                         resource_owner_value = connection.entries[0]['mail']
 
-            self.logger.info("%s %s" % (resource_owner_value, resource_string))
+            self.logger.debug("%s %s" % (resource_owner_value, resource_string))
 
-            # sqs_fetch.ack(m)
+            resource_dict['resource_owner_value'] = resource_owner_value
+            resource_dict['resource_string'] = resource_string
 
-    def process_sqs(self):
+            for method in config.get('notify_methods'):
+                if method == 'Slack':
+                    self.slack_handler(config.get('slack_token'), resource_dict)
+
+    def slack_handler(self, token, resource_dict):
+        slack = SlackBot(token)
+
+        response = slack.retrieve_user_im(resource_dict['resource_owner_value'])
+
+        if not response['ok']:
+            self.logger.debug("Slack account not found for user %s.", resource_dict['resource_owner_value'])
+        else:
+            self.logger.debug("Slack account %s found for user %s", response['user']['enterprise_user']['id'], resource_dict['resource_owner_value'])
+            slack.send_slack_msg(response['user']['enterprise_user']['id'], resource_dict)
+
+    def process_sqs(self, config):
 
         sqs_fetch = sqsexec.MessageIterator(client=self.session.client('sqs'), queue_url=self.config.get('queue_url'), timeout=0)
         connection = self.get_ldap_session()
-        self.logger.info('processing queue messages')
+        self.logger.info('Processing queue messages')
 
         for m in sqs_fetch:
 
             with ThreadPoolExecutor(max_workers=2) as w:
                 futures = {}
 
-                futures[w.submit(self.message_handler, connection, m)] = m
+                futures[w.submit(self.message_handler, connection, config, m)] = m
 
                 for future in as_completed(futures):
+                    # sqs_fetch.ack(m)
                     if future.exception():
                         self.logger.error("Error processing message: %s", future.exception())
 
@@ -293,7 +319,7 @@ class SQSHandler(object):
             for contact_tag in self.config.get('contact_tags'):
                 for tag in tags:
                     if tag == contact_tag:
-                        self.logger.debug("resource owner match: %s - %s", contact_tag, tags[contact_tag])
+                        self.logger.debug("Resource owner match: %s - %s", contact_tag, tags[contact_tag])
                         return tags[contact_tag], contact_tag
         else:
             self.logger.debug("No tags found.")

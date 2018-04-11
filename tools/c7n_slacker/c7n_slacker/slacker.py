@@ -36,8 +36,8 @@ class SlackBot(object):
                     "users.lookupByEmail", email=user_email)
         return response
 
-    def send_slack_msg(self, channel):
+    def send_slack_msg(self, channel, resource_dict):
         response = self.client.api_call(
-            "chat.postMessage", channel=channel, text="Hello from Python! :tada:")
+            "chat.postMessage", channel=channel, text='Account Name: {r[account]} Region: {r[region]}\nCompliance Status: {r[violation_desc]}\n{r[resource_string]}\n{r[action_desc]}'.format(r=resource_dict))
         return response
 

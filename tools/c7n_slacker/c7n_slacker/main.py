@@ -30,6 +30,7 @@ CONFIG_SCHEMA = {
         'region': {'type': 'string'},
         'role': {'type': 'string'},
         'contact_tags': {'type': 'array', 'items': {'type': 'string'}},
+        'notify_methods': {'type': 'array', 'items': {'type': 'string'}},
         'kms_decrypt_token': {'type': 'string'},
         'slack_token': {'type': 'string'},
         'ldap_uri': {'type': 'string'},
@@ -71,10 +72,9 @@ def start(config):
         config['slack_token'] = kms.decrypt(
             CiphertextBlob=base64.b64decode(config['slack_token']))['Plaintext']
 
+    message_handler = SQSHandler(config, get_logger(debug=False))
 
-    slacker_handler = SQSHandler(config, get_logger(debug=False))
-
-    slacker_handler.process_sqs()
+    message_handler.process_sqs(config)
 
 if __name__ == '__main__':
     try:
