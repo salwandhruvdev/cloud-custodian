@@ -22,6 +22,7 @@ from botocore.exceptions import ClientError
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from ldap3 import Connection, Server
 from ldap3.core.exceptions import LDAPSocketOpenError
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from c7n import sqsexec
 from slacker import SlackBot
@@ -263,13 +264,17 @@ class SQSHandler(object):
                 if method == 'Slack':
                     self.slack_handler(config.get('slack_token'), resource_dict)
 
+    @retry(stop=stop_after_attempt(2), wait=wait_fixed(2))
     def slack_handler(self, token, resource_dict):
         slack = SlackBot(token)
 
         response = slack.retrieve_user_im(resource_dict['resource_owner_value'])
 
-        if not response['ok']:
-            self.logger.debug("Slack account not found for user %s.", resource_dict['resource_owner_value'])
+        if not response["ok"] and "Retry-After" in response["headers"]:
+            raise Exception("Slack API timeout.")
+        elif not response["ok"] and response["error"] == "users_not_found":
+            self.logger.info("Slack user ID not found.")
+            return
         else:
             self.logger.debug("Slack account %s found for user %s", response['user']['enterprise_user']['id'], resource_dict['resource_owner_value'])
             slack.send_slack_msg(response['user']['enterprise_user']['id'], resource_dict)
@@ -354,7 +359,7 @@ class SQSHandler(object):
                 server, user=self.config.get('ldap_bind_user'), password=ldap_bind_password,
                 auto_bind=True,
                 receive_timeout=30,
-                auto_referrals=False,
+                auto_referrals=False
             )
         except LDAPSocketOpenError:
             self.logger.error('Not able to establish a connection with LDAP.')

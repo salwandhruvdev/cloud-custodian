@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import time
 from slackclient import SlackClient
 
 
@@ -28,5 +28,3 @@ class SlackBot(object):
     def send_slack_msg(self, channel, resource_dict):
         response = self.client.api_call(
             "chat.postMessage", channel=channel, text='Account Name: {r[account]} Region: {r[region]}\nCompliance Status: {r[violation_desc]}\n{r[resource_string]}\n{r[action_desc]}'.format(r=resource_dict))
-        return response
-

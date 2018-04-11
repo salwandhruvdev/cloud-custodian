@@ -29,5 +29,5 @@ setup(
     entry_points={
         'console_scripts': [
             'c7n-slacker = c7n_slacker.main:cli']},
-    install_requires=["c7n", "click"],
+    install_requires=["c7n", "click", "ldap3", "tenacity"],
 )
