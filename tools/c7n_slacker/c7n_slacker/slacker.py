@@ -12,17 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Thoughts:
- - Token as part of schema, encrypted token
- - Purpose of this file
-  - Create an interface to create a Slack Client(This can be done in __init__)
-  - Retrieve per user IM slack details details on the basis of LDAP lookup
-  - Send message to the User's IM
-
-"""
-
-
 from slackclient import SlackClient
 
 
