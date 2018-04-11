@@ -16,75 +16,28 @@ import json
 from email.utils import parseaddr
 
 import yaml
-import logging
 import boto3
 import os
 
 import zlib
 
 from botocore.exceptions import ClientError
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from ldap3 import Connection, Server
 from ldap3.core.exceptions import LDAPSocketOpenError
+from c7n import sqsexec
 
+class SQSHandler(object):
 
-class SqsIterator(object):
-
-    def __init__(self, client, queue_url, logger, timeout):
-        self.queue_url = queue_url
-        self.logger = logger
-        self.client = client
-        self.timeout = timeout
-        self.messages = []
-        self.iterator = # an object of from c7n import sqsexec
-
-    # Copied from custodian to avoid runtime library dependency
-    msg_attributes = ['sequence_id', 'op', 'ser']
-
-    # this and the next function make this object iterable with a for loop
-    def __iter__(self):
-        return self
-
-    # def __next__(self):
-    #     if self.messages:
-    #         return self.messages.pop(0)
-    #     response = self.client.receive_message(
-    #         QueueUrl=self.queue_url,
-    #         WaitTimeSeconds=self.timeout,
-    #         MaxNumberOfMessages=3,
-    #         MessageAttributeNames=self.msg_attributes)
-    #
-    #     msgs = response.get('Messages', [])
-    #     self.logger.info('Messages received %d', len(msgs))
-    #     for m in msgs:
-    #         self.messages.append(m)
-    #     if self.messages:
-    #         return self.messages.pop(0)
-    #     raise StopIteration()
-
-    # next = __next__  # python2.7
-    #
-    # def ack(self, m):
-    #     self.client.delete_message(
-    #         QueueUrl=self.queue_url,
-    #         ReceiptHandle=m['ReceiptHandle'])
-
-
-class SQSHandler():
-
-    def __init__(self, config):
-        with open(config) as fh:
-            new_config = yaml.load(fh.read(), Loader=yaml.SafeLoader)
-        self.config = new_config
+    def __init__(self, config, logger):
+        self.config = config
         self.session = self.session_factory(self.config)
-        self.logger = self.get_logger(debug=False)
+        self.logger = logger
         self.base_dn   = self.config.get('ldap_bind_dn')
         self.email_key = self.config.get('ldap_email_key', 'mail')
         self.uid_key   = self.config.get('ldap_uid_attribute_name', 'sAMAccountName')
         self.manager_attr = self.config.get('ldap_manager_attribute', 'manager')
         self.attributes = ['displayName', self.uid_key, self.email_key, self.manager_attr]
-
-    def format_struct(evt):
-        return json.dumps(evt, indent=2, ensure_ascii=False)
 
     def resource_format(self, r, r_type):
         if r_type == 'ec2':
@@ -237,36 +190,81 @@ class SQSHandler():
         else:
             return "%s" % r
 
-    def process_sqs(self):
-
-        messages = []
-
-        sqs_fetch = SqsIterator(client=self.session.client('sqs'), queue_url=self.config.get('queue_url'), logger=self.logger, timeout=0)
-        self.logger.info('processing queue messages')
-
-        for m in sqs_fetch:
-            message = m['Body']
-            try:
-                self.logger.debug('Valid JSON')
-                msg_json = json.loads(zlib.decompress(base64.b64decode(message)))
-                self.logger.info("Acct: %s,  msg: %s, resource type: %s, count: %d, policy: %s, recipients: %s, action_desc: %s, violation_desc: %s" % (
+    def message_handler(self, connection, msg):
+        message = msg['Body']
+        try:
+            self.logger.info('Valid JSON')
+            msg_json = json.loads(zlib.decompress(base64.b64decode(message)))
+            self.logger.info(
+                "Acct: %s,  msg: %s, resource type: %s, count: %d, policy: %s, recipients: %s, action_desc: %s, violation_desc: %s" % (
                     msg_json.get('account', 'na'),
-                    m['MessageId'],
+                    msg['MessageId'],
                     msg_json['policy']['resource'],
                     len(msg_json['resources']),
                     msg_json['policy']['name'],
                     ', '.join(msg_json['action']['to']),
                     msg_json['action']['action_desc'],
                     msg_json['action']['violation_desc']))
-                messages.append(msg_json)
+        except ValueError:
+            self.logger.warning("Invalid JSON")
+            return
 
-                # sqs_fetch.ack(m)
+        if 'resource-owner' not in msg_json['action']['to']:
+            self.logger.debug("No resource owner found. Skipping message.")
 
-            except ValueError:
-                self.logger.warning("Invalid JSON")
-                pass
+        for resource in msg_json['resources']:
+            try:
+                resource_owner_value, matched_tag = self.get_resource_owner_values(resource)
+            except Exception as e:
+                self.logger.warning("Error fetching resource owner value: %s" % e)
 
-        return messages
+            if resource is None or resource_owner_value is None:
+                self.logger.debug("Resource details not found. Continuing....")
+                return
+            else:
+                resource_string = self.resource_format(resource, msg_json['policy']['resource'])
+                self.logger.debug("resource string: %s", resource_string)
+
+                if (self.target_is_email(resource_owner_value)) is True:
+                    self.logger.debug("%s %s: %s" % (resource_string, matched_tag, resource_owner_value))
+                    self.logger.debug("Email address found.")
+                    resource_owner_value = resource_owner_value
+                elif (resource_owner_value.find("arn:aws:sns") != -1):
+                    self.logger.debug("Contact method is SNS topic. Skipping.")
+                    return
+                else:
+                    self.logger.debug("ID number found. Doing LDAP lookup.")
+                    ldap_filter = '(%s=%s)' % (self.uid_key, resource_owner_value)
+                    connection.search(self.base_dn, ldap_filter, attributes=self.attributes)
+                    if len(connection.entries) == 0:
+                        self.logger.warning("user not found. base_dn: %s filter: %s", self.base_dn, ldap_filter)
+                        return
+                    elif len(connection.entries) > 1:
+                        self.logger.warning("too many results for search")
+                        return
+                    else:
+                        resource_owner_value = connection.entries[0]['mail']
+
+            self.logger.info("%s %s" % (resource_owner_value, resource_string))
+
+            # sqs_fetch.ack(m)
+
+    def process_sqs(self):
+
+        sqs_fetch = sqsexec.MessageIterator(client=self.session.client('sqs'), queue_url=self.config.get('queue_url'), timeout=0)
+        connection = self.get_ldap_session()
+        self.logger.info('processing queue messages')
+
+        for m in sqs_fetch:
+
+            with ThreadPoolExecutor(max_workers=2) as w:
+                futures = {}
+
+                futures[w.submit(self.message_handler, connection, m)] = m
+
+                for future in as_completed(futures):
+                    if future.exception():
+                        self.logger.error("Error processing message: %s", future.exception())
 
     def session_factory(self, config):
 
@@ -283,18 +281,6 @@ class SQSHandler():
         return boto3.Session(
             region_name=set_region,
             profile_name=set_profile)
-
-    def get_logger(self, debug):
-        log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-        logging.basicConfig(level=logging.INFO, format=log_format)
-        logging.getLogger('botocore').setLevel(logging.WARNING)
-        if debug:
-            logging.getLogger('botocore').setLevel(logging.DEBUG)
-            debug_logger = logging.getLogger('c7n-slacker')
-            debug_logger.setLevel(logging.DEBUG)
-            return debug_logger
-        else:
-            return logging.getLogger('c7n-slacker')
 
     def get_resource_owner_values(self, sqs_message):
         if 'Tags' in sqs_message:
@@ -317,68 +303,8 @@ class SQSHandler():
         if parseaddr(target)[1] and '@' in target and '.' in target:
             return True
         else:
-            return False
-
-    def search_ldap(self, messages):
-        message_delimiter = 0
-        resource_delimiter = 0
-        connection = self.get_ldap_session()
-        resource_list = {}
-        target_list = {}
-        if messages is None:
-            self.logger.info("No messages left to process. Exiting SQS handler.")
-            return
-        for m in messages:
-            for r in m['resources']:
-                if 'resource-owner' in m['action']['to']:
-                    try:
-                        resource_owner_value, matched_tag = self.get_resource_owner_values(r)
-                    except Exception as e:
-                        self.logger.warning("Error fetching resource owner value: %s" % e)
-                    if r is None or resource_owner_value is None:
-                        self.logger.debug("Resource details not found. Continuing....")
-                        continue
-                    else:
-                        resource_string = self.resource_format(r, m['policy']['resource'])
-                        self.logger.debug("resource string: %s", resource_string)
-                        resource_handler = {resource_delimiter: {'resource_string': resource_string}}
-                        if (self.target_is_email(resource_owner_value)) is True:
-                            self.logger.debug("%s %s: %s" % (resource_string, matched_tag, resource_owner_value))
-                            self.logger.debug("Email address found. Passing back to handler.")
-                            resource_handler[resource_delimiter].update({'resource_owner_value': resource_owner_value})
-                        elif (resource_owner_value.find("arn:aws:sns") != -1):
-                                self.logger.debug("Contact method is SNS topic. Skipping.")
-                                continue
-                        else:
-                            self.logger.debug("ID number found. Doing LDAP lookup.")
-                            ldap_filter = '(%s=%s)' % (self.uid_key, resource_owner_value)
-                            connection.search(self.base_dn, ldap_filter, attributes=self.attributes)
-                            if len(connection.entries) == 0:
-                                self.logger.warning("user not found. base_dn: %s filter: %s", self.base_dn, ldap_filter)
-                                continue
-                            elif len(connection.entries) > 1:
-                                self.logger.warning("too many results for search")
-                                continue
-                            self.logger.debug("%s %s: %s" % (self.resource_format(r, m['policy']['resource']), matched_tag, connection.entries[0]['mail']))
-                            self.logger.debug("LDAP lookup complete. Passing back to handler.")
-                            resource_handler.update({
-                                resource_delimiter: {'resource_owner_value': connection.entries[0]['mail']}})
-
-                        resource_handler[resource_delimiter].update(
-                            {'resource_type': m['policy']['resource']})
-                        resource_handler[resource_delimiter].update(
-                            {'action_desc': m['action']['action_desc']})
-                        resource_handler[resource_delimiter].update(
-                            {'violation_desc': m['action']['violation_desc']})
-
-                        resource_list.update(resource_handler)
-
-                        resource_delimiter += 1
-
-            target_list.update(resource_list)
-            message_delimiter += 1
-
-        return target_list
+            pass
+        return False
 
     def get_ldap_session(self):
         try:
@@ -396,13 +322,10 @@ class SQSHandler():
             self.logger.warning(
                 "Error: %s Unable to decrypt ldap_bind_password with kms, will assume plaintext." % (e)
             )
-        return self.get_connection(self.config.get('ldap_uri'), self.config.get('ldap_bind_user'), ldap_bind_password)
-
-    def get_connection(self, ldap_uri, ldap_bind_user, ldap_bind_password):
         try:
-            server = Server(ldap_uri, use_ssl=True)
+            server = Server(self.config.get('ldap_uri'), use_ssl=True)
             return Connection(
-                server, user=ldap_bind_user, password=ldap_bind_password,
+                server, user=self.config.get('ldap_bind_user'), password=ldap_bind_password,
                 auto_bind=True,
                 receive_timeout=30,
                 auto_referrals=False,

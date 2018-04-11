@@ -11,52 +11,46 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import base64
+import logging
 
+import boto3
 import click
+import jsonschema
+import yaml
+
 from sqs_handler import SQSHandler
 
 CONFIG_SCHEMA = {
     'type': 'object',
     'additionalProperties': False,
-    'required': ['queue_url', 'role', 'from_address'],
+    'required': ['queue_url', 'role', 'kms_decrypt_token', 'slack_token'],
     'properties': {
         'queue_url': {'type': 'string'},
-        'contact_tags': {'type': 'array', 'items': {'type': 'string'}},
-
-        # Mailer Infrastructure Config
+        'region': {'type': 'string'},
         'role': {'type': 'string'},
-        'cache_engine': {'type': 'string'},
-        'smtp_server': {'type': 'string'},
-        'smtp_port': {'type': 'integer'},
-        'smtp_ssl': {'type': 'boolean'},
-        'smtp_username': {'type': 'string'},
-        'smtp_password': {'type': 'string'},
-        'ldap_email_key': {'type': 'string'},
-        'ldap_uid_tags': {'type': 'array', 'items': {'type': 'string'}},
-        'debug': {'type': 'boolean'},
-        'ldap_uid_regex': {'type': 'string'},
+        'contact_tags': {'type': 'array', 'items': {'type': 'string'}},
+        'kms_decrypt_token': {'type': 'string'},
+        'slack_token': {'type': 'string'},
         'ldap_uri': {'type': 'string'},
         'ldap_bind_dn': {'type': 'string'},
         'ldap_bind_user': {'type': 'string'},
-        'ldap_uid_attribute': {'type': 'string'},
-        'ldap_manager_attribute': {'type': 'string'},
-        'ldap_email_attribute': {'type': 'string'},
-        'ldap_bind_password_in_kms': {'type': 'boolean'},
         'ldap_bind_password': {'type': 'string'},
-        'cross_accounts': {'type': 'object'},
-        'ses_region': {'type': 'string'},
-        'redis_host': {'type': 'string'},
-        'redis_port': {'type': 'integer'},
-
-        # SDK Config
-        'profile': {'type': 'string'},
-        'http_proxy': {'type': 'string'},
-        'https_proxy': {'type': 'string'},
-
-        # Mapping account / emails
-        'account_emails': {'type': 'object'}
     }
 }
+
+
+def get_logger(debug):
+    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    logging.basicConfig(level=logging.INFO, format=log_format)
+    logging.getLogger('botocore').setLevel(logging.WARNING)
+    if debug:
+        logging.getLogger('botocore').setLevel(logging.DEBUG)
+        debug_logger = logging.getLogger('c7n-slacker')
+        debug_logger.setLevel(logging.DEBUG)
+        return debug_logger
+    else:
+        return logging.getLogger('c7n-slacker')
 
 @click.group()
 def cli():
@@ -67,11 +61,20 @@ def cli():
 @click.option('-c', '--config', required=True, help="Config file")
 def start(config):
 
-    slacker_handler = SQSHandler(config)
+    with open(config) as fh:
+        config = yaml.load(fh.read(), Loader=yaml.SafeLoader)
 
-    messages = slacker_handler.process_sqs()
+    jsonschema.validate(config, CONFIG_SCHEMA)
 
-    results = slacker_handler.search_ldap(messages)
+    if config.get('kms_decrypt_token', True) and config.get('slack_token'):
+        kms = boto3.Session(region_name=config.get('region')).client('kms')
+        config['slack_token'] = kms.decrypt(
+            CiphertextBlob=base64.b64decode(config['slack_token']))['Plaintext']
+
+
+    slacker_handler = SQSHandler(config, get_logger(debug=False))
+
+    slacker_handler.process_sqs()
 
 if __name__ == '__main__':
     try:

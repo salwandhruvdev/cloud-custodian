@@ -97,7 +97,8 @@ class EmailDelivery(object):
                 self.logger.warning(
                     "Error: %s Unable to decrypt ldap_bind_password with kms, will assume plaintext." % (e)
                 )
-            return LdapLookup(self.config, self.logger)
+            self.lookup = LdapLookup
+            return self.lookup(self.config, self.logger)
         return None
 
     def priority_header_is_valid(self, priority_header):
